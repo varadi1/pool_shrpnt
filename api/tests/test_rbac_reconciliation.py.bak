@@ -1,0 +1,422 @@
+"""Integration tests for SharePoint permission reconciliation."""
+
+import uuid
+from datetime import datetime
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import pytest
+from sqlalchemy.orm import Session
+
+from api.models.rbac import PermissionAssignment, Role, User
+from api.schemas.rbac import PermissionLevel
+from api.services.rbac.reconciliation_report import ReconciliationReportService
+
+
+@pytest.fixture
+def mock_graph_auth():
+    """Mock Graph authentication service."""
+    auth = AsyncMock()
+    auth.get_app_token.return_value = "mock_token"
+    return auth
+
+
+@pytest.fixture
+def reconciliation_service(mock_graph_auth):
+    """Create reconciliation service with mocked dependencies."""
+    return ReconciliationReportService(graph_auth=mock_graph_auth)
+
+
+@pytest.fixture
+def sample_db_data(db_session: Session):
+    """Create sample database data for testing."""
+    # Create users
+    user1 = User(
+        id=uuid.uuid4(),
+        email="user1@example.com",
+        display_name="User One",
+        azure_ad_id=str(uuid.uuid4()),
+    )
+    user2 = User(
+        id=uuid.uuid4(),
+        email="user2@example.com",
+        display_name="User Two",
+        azure_ad_id=str(uuid.uuid4()),
+    )
+    db_session.add_all([user1, user2])
+
+    # Create roles
+    role_pm = Role(
+        id=uuid.uuid4(),
+        name="PM",
+        description="Project Manager",
+        is_active=True,
+    )
+    role_expert = Role(
+        id=uuid.uuid4(),
+        name="Expert",
+        description="Expert",
+        is_active=True,
+    )
+    db_session.add_all([role_pm, role_expert])
+
+    # Create role assignments
+    role_assignment1 = RoleAssignment(
+        id=uuid.uuid4(),
+        user_id=user1.id,
+        role_id=role_pm.id,
+        order_em_id=uuid.uuid4(),
+        assigned_by=user1.id,
+        is_active=True,
+    )
+    role_assignment2 = RoleAssignment(
+        id=uuid.uuid4(),
+        user_id=user2.id,
+        role_id=role_expert.id,
+        order_em_id=role_assignment1.order_em_id,
+        assigned_by=user1.id,
+        is_active=True,
+    )
+    db_session.add_all([role_assignment1, role_assignment2])
+
+    # Create permission assignments
+    perm1 = PermissionAssignment(
+        id=uuid.uuid4(),
+        role_assignment_id=role_assignment1.id,
+        order_em_id=role_assignment1.order_em_id,
+        resource_type="folder",
+        resource_path="01_Szakertok",
+        permission_level=PermissionLevel.WRITE,
+        is_active=True,
+    )
+    perm2 = PermissionAssignment(
+        id=uuid.uuid4(),
+        role_assignment_id=role_assignment2.id,
+        order_em_id=role_assignment1.order_em_id,
+        resource_type="folder",
+        resource_path="01_Szakertok",
+        permission_level=PermissionLevel.READ,
+        is_active=True,
+    )
+    perm3 = PermissionAssignment(
+        id=uuid.uuid4(),
+        role_assignment_id=role_assignment1.id,
+        order_em_id=role_assignment1.order_em_id,
+        resource_type="folder",
+        resource_path="02_Ajanlatok",
+        permission_level=PermissionLevel.WRITE,
+        is_active=True,
+    )
+    db_session.add_all([perm1, perm2, perm3])
+
+    db_session.commit()
+
+    # Set relationships
+    role_assignment1.user = user1
+    role_assignment2.user = user2
+
+    return {
+        "order_em_id": role_assignment1.order_em_id,
+        "users": [user1, user2],
+        "roles": [role_pm, role_expert],
+        "role_assignments": [role_assignment1, role_assignment2],
+        "permissions": [perm1, perm2, perm3],
+    }
+
+
+@pytest.mark.asyncio
+async def test_generate_reconciliation_report_matching(
+    reconciliation_service, db_session, sample_db_data
+):
+    """Test generating report when permissions match."""
+    order_em_id = sample_db_data["order_em_id"]
+
+    # Mock SharePoint response to match calculated permissions
+    with patch.object(
+        reconciliation_service,
+        "_query_sharepoint_permissions",
+        return_value={
+            "01_Szakertok": {
+                ("user1@example.com", PermissionLevel.WRITE),
+                ("user2@example.com", PermissionLevel.READ),
+            },
+            "02_Ajanlatok": {("user1@example.com", PermissionLevel.WRITE)},
+        },
+    ):
+        report = await reconciliation_service.generate_reconciliation_report(
+            db_session, order_em_id
+        )
+
+    assert report["order_em_id"] == str(order_em_id)
+    assert report["summary"]["total_folders"] == 2
+    assert report["summary"]["matching_folders"] == 2
+    assert report["summary"]["mismatched_folders"] == 0
+    assert report["summary"]["missing_in_sharepoint"] == 0
+    assert report["summary"]["unauthorized_in_sharepoint"] == 0
+    assert report["summary"]["total_unauthorized_changes"] == 0
+
+
+@pytest.mark.asyncio
+async def test_generate_reconciliation_report_with_mismatches(
+    reconciliation_service, db_session, sample_db_data
+):
+    """Test generating report with permission mismatches."""
+    order_em_id = sample_db_data["order_em_id"]
+
+    # Mock SharePoint response with mismatches
+    with patch.object(
+        reconciliation_service,
+        "_query_sharepoint_permissions",
+        return_value={
+            "01_Szakertok": {
+                ("user1@example.com", PermissionLevel.WRITE),
+                ("user3@example.com", PermissionLevel.WRITE),  # Unauthorized user
+            },
+            # 02_Ajanlatok missing
+            "03_Unauthorized": {("user4@example.com", PermissionLevel.READ)},  # Unauthorized folder
+        },
+    ):
+        report = await reconciliation_service.generate_reconciliation_report(
+            db_session, order_em_id
+        )
+
+    assert report["summary"]["total_folders"] == 2
+    assert report["summary"]["matching_folders"] == 0
+    assert report["summary"]["mismatched_folders"] == 1
+    assert report["summary"]["missing_in_sharepoint"] == 1
+    assert report["summary"]["unauthorized_in_sharepoint"] == 1
+    assert report["summary"]["total_unauthorized_changes"] > 0
+
+    # Check unauthorized changes detected
+    unauthorized = report["unauthorized_changes"]
+    assert any(u["type"] == "unauthorized_permission" for u in unauthorized)
+    assert any(u["type"] == "missing_permission" for u in unauthorized)
+
+
+@pytest.mark.asyncio
+async def test_reconciliation_recommendations(reconciliation_service, db_session, sample_db_data):
+    """Test generation of remediation recommendations."""
+    order_em_id = sample_db_data["order_em_id"]
+
+    # Mock SharePoint with various issues
+    with patch.object(
+        reconciliation_service,
+        "_query_sharepoint_permissions",
+        return_value={
+            "01_Szakertok": {
+                ("unauthorized@example.com", PermissionLevel.WRITE),  # High severity
+            },
+            # Missing 02_Ajanlatok
+        },
+    ):
+        report = await reconciliation_service.generate_reconciliation_report(
+            db_session, order_em_id, include_recommendations=True
+        )
+
+    assert "recommendations" in report
+    recommendations = report["recommendations"]
+
+    # Should have recommendations for high-severity issues first
+    assert len(recommendations) > 0
+    assert recommendations[0]["priority"] in ["immediate", "high"]
+    assert any(r["action"] == "remove_unauthorized_permissions" for r in recommendations)
+    assert any(r["action"] == "apply_missing_permissions" for r in recommendations)
+
+
+@pytest.mark.asyncio
+async def test_query_sharepoint_permissions(reconciliation_service):
+    """Test querying actual SharePoint permissions."""
+    order_em_id = uuid.uuid4()
+
+    # Mock Graph API responses
+    with patch.object(
+        reconciliation_service.graph_adapter,
+        "execute_with_retry",
+        side_effect=[
+            # First call: get folders
+            {
+                "value": [
+                    {
+                        "id": "folder1",
+                        "name": "01_Szakertok",
+                        "folder": {},
+                    },
+                    {
+                        "id": "folder2",
+                        "name": "02_Ajanlatok",
+                        "folder": {},
+                    },
+                ]
+            },
+            # Second call: permissions for folder1
+            {
+                "value": [
+                    {
+                        "grantedTo": {"user": {"email": "user1@example.com"}},
+                        "roles": ["write"],
+                    }
+                ]
+            },
+            # Third call: permissions for folder2
+            {
+                "value": [
+                    {
+                        "grantedTo": {"user": {"email": "user2@example.com"}},
+                        "roles": ["read"],
+                    }
+                ]
+            },
+        ],
+    ):
+        permissions = await reconciliation_service._query_sharepoint_permissions(order_em_id)
+
+    assert "01_Szakertok" in permissions
+    assert ("user1@example.com", PermissionLevel.WRITE) in permissions["01_Szakertok"]
+    assert "02_Ajanlatok" in permissions
+    assert ("user2@example.com", PermissionLevel.READ) in permissions["02_Ajanlatok"]
+
+
+@pytest.mark.asyncio
+async def test_permission_drift_summary(reconciliation_service, db_session, sample_db_data):
+    """Test getting permission drift summary."""
+    order_em_id = sample_db_data["order_em_id"]
+
+    # Update some assignments with sync status
+    permissions = sample_db_data["permissions"]
+    permissions[0].sharepoint_sync_status = "synced"
+    permissions[0].last_sync_at = datetime.utcnow()
+    permissions[1].sharepoint_sync_status = "failed"
+    permissions[1].sync_error = "Graph API error"
+    permissions[2].sharepoint_sync_status = "pending"
+    db_session.commit()
+
+    summary = await reconciliation_service.get_permission_drift_summary(db_session, order_em_id)
+
+    assert summary["total_assignments"] == 3
+    assert summary["synced"] == 1
+    assert summary["pending"] == 1
+    assert summary["failed"] == 1
+    assert 0 <= summary["sync_percentage"] <= 100
+    assert summary["order_em_id"] == str(order_em_id)
+
+
+@pytest.mark.asyncio
+async def test_identify_unauthorized_changes(reconciliation_service):
+    """Test identification of unauthorized permission changes."""
+    differences = [
+        {
+            "folder": "01_Szakertok",
+            "status": "mismatched",
+            "extra_permissions": [("unauthorized@example.com", PermissionLevel.WRITE)],
+            "missing_permissions": [("required@example.com", PermissionLevel.READ)],
+        },
+        {
+            "folder": "02_Ajanlatok",
+            "status": "unauthorized_in_sharepoint",
+            "extra_permissions": [("hacker@example.com", PermissionLevel.WRITE)],
+            "missing_permissions": [],
+        },
+    ]
+
+    calculated_permissions = {
+        "01_Szakertok": {("required@example.com", PermissionLevel.READ)},
+    }
+
+    unauthorized = reconciliation_service._identify_unauthorized_changes(
+        differences, calculated_permissions
+    )
+
+    assert len(unauthorized) > 0
+
+    # Check for unauthorized permission
+    unauth_perms = [u for u in unauthorized if u["type"] == "unauthorized_permission"]
+    assert len(unauth_perms) >= 2
+    assert any(u["user"] == "unauthorized@example.com" for u in unauth_perms)
+    assert any(u["severity"] == "high" for u in unauth_perms)
+
+    # Check for missing permission
+    missing_perms = [u for u in unauthorized if u["type"] == "missing_permission"]
+    assert len(missing_perms) >= 1
+    assert any(u["user"] == "required@example.com" for u in missing_perms)
+
+
+@pytest.mark.asyncio
+async def test_reconciliation_with_manual_locks(reconciliation_service, db_session, sample_db_data):
+    """Test reconciliation considering manual locks."""
+    order_em_id = sample_db_data["order_em_id"]
+
+    # Add a manual lock to the database
+    from api.models.lock import LockState
+
+    lock = LockState(
+        id=uuid.uuid4(),
+        folder_id=uuid.uuid4(),
+        folder_path="01_Szakertok",
+        locked_by=sample_db_data["users"][0].id,
+        locked_at=datetime.utcnow(),
+        lock_reason="Security review",
+        lock_type="manual",
+        is_active=True,
+    )
+    db_session.add(lock)
+    db_session.commit()
+
+    # Mock SharePoint with no permissions (locked folder)
+    with patch.object(
+        reconciliation_service,
+        "_query_sharepoint_permissions",
+        return_value={
+            "01_Szakertok": set(),  # No permissions due to lock
+            "02_Ajanlatok": {("user1@example.com", PermissionLevel.WRITE)},
+        },
+    ):
+        report = await reconciliation_service.generate_reconciliation_report(
+            db_session, order_em_id
+        )
+
+    # Locked folders should be handled differently in recommendations
+    if "recommendations" in report:
+        # Should not recommend immediate action for locked folders
+        high_priority = [r for r in report["recommendations"] if r["priority"] == "immediate"]
+        for rec in high_priority:
+            assert "01_Szakertok" not in rec.get("affected_folders", [])
+
+
+@pytest.mark.asyncio
+async def test_reconciliation_error_handling(reconciliation_service, db_session, sample_db_data):
+    """Test error handling during reconciliation."""
+    order_em_id = sample_db_data["order_em_id"]
+
+    # Mock Graph API error
+    with patch.object(
+        reconciliation_service,
+        "_query_sharepoint_permissions",
+        side_effect=Exception("Graph API unavailable"),
+    ):
+        with pytest.raises(Exception) as exc_info:
+            await reconciliation_service.generate_reconciliation_report(db_session, order_em_id)
+
+        assert "Reconciliation report generation failed" in str(exc_info.value)
+
+
+@pytest.mark.asyncio
+async def test_audit_logging_in_reconciliation(reconciliation_service, db_session, sample_db_data):
+    """Test that reconciliation activities are properly audited."""
+    order_em_id = sample_db_data["order_em_id"]
+
+    with patch.object(
+        reconciliation_service,
+        "_query_sharepoint_permissions",
+        return_value={},
+    ):
+        with patch("api.services.audit.AuditService") as mock_audit:
+            # Create a mock audit service instance
+            mock_audit_instance = MagicMock()
+            mock_audit.return_value = mock_audit_instance
+
+            report = await reconciliation_service.generate_reconciliation_report(
+                db_session, order_em_id
+            )
+
+            # Verify the report was generated
+            assert report is not None
+            assert report["order_em_id"] == str(order_em_id)

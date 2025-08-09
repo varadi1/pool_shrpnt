@@ -1,0 +1,25 @@
+# poolDRV — Full‑Stack Architecture v0.1
+
+## Table of Contents
+
+- [poolDRV — Full‑Stack Architecture v0.1](#table-of-contents)
+  - [1) Architecture Principles](./1-architecture-principles.md)
+  - [2) System Context & Actors](./2-system-context-actors.md)
+  - [3) Workloads / Services (Monorepo)](./3-workloads-services-monorepo.md)
+  - [4) Identity & Access (Azure AD / MSAL)](./4-identity-access-azure-ad-msal.md)
+  - [5) Frontend Architecture (React)](./5-frontend-architecture-react.md)
+  - [6) Backend Architecture (FastAPI)](./6-backend-architecture-fastapi.md)
+  - [7) Data Model (PostgreSQL 15)](./7-data-model-postgresql-15.md)
+  - [8) API Surface (examples)](./8-api-surface-examples.md)
+  - [9) Scheduler & Job Model (Celery)](./9-scheduler-job-model-celery.md)
+  - [10) Microsoft 365 Integrations (Graph / SharePoint)](./10-microsoft-365-integrations-graph-sharepoint.md)
+  - [11) Notifications](./11-notifications.md)
+  - [12) Observability & Audit](./12-observability-audit.md)
+  - [13) Security & Compliance](./13-security-compliance.md)
+  - [14) Infrastructure & Environments (Azure)](./14-infrastructure-environments-azure.md)
+  - [15) CI/CD (GitHub Actions)](./15-cicd-github-actions.md)
+  - [16) A11y & Performance Targets (from PRD)](./16-a11y-performance-targets-from-prd.md)
+  - [17) Mapping to PRD Epics](./17-mapping-to-prd-epics.md)
+  - [18) Open Decisions (require confirmation; PRD remains authoritative)](./18-open-decisions-require-confirmation-prd-remains-authoritative.md)
+  - [19) Risks & Mitigations](./19-risks-mitigations.md)
+  - [20) Appendix — Sequence Sketches (text)](./20-appendix-sequence-sketches-text.md)

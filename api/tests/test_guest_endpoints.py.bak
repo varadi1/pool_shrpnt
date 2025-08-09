@@ -1,0 +1,502 @@
+"""Tests for guest API endpoints."""
+
+from datetime import UTC, datetime, timedelta
+from unittest.mock import AsyncMock, patch
+from uuid import uuid4
+
+import pytest
+from fastapi import status
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from api.models.contract import PartnerCompany
+from api.models.guest import GuestStatus, GuestUser
+from api.models.rbac import Group
+
+
+@pytest.fixture
+def mock_current_user():
+    """Mock current user for authentication."""
+    return {
+        "id": str(uuid4()),
+        "email": "admin@example.com",
+        "name": "Test Admin",
+        "roles": ["NEU_Admin"]
+    }
+
+
+@pytest.mark.asyncio
+async def test_invite_guest_endpoint_success(
+    async_client: AsyncClient,
+    async_test_db: AsyncSession,
+    mock_current_user: dict,
+):
+    """Test successful guest invitation via API endpoint."""
+    # Create partner company
+    partner = PartnerCompany(
+        company_code="API_PARTNER",
+        name="API Test Partner",
+        short_name="ATP",
+    )
+    async_test_db.add(partner)
+    await async_test_db.commit()
+
+    # Mock the guest service
+    with patch("api.routers.guests.GuestService") as MockService:
+        mock_service = MockService.return_value
+        mock_guest = GuestUser(
+            id=uuid4(),
+            email="api.guest@example.com",
+            display_name="API Guest",
+            partner_company_id=partner.id,
+            status=GuestStatus.INVITED,
+            invited_at=datetime.now(UTC),
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        )
+        mock_service.invite_guest = AsyncMock(return_value=mock_guest)
+
+        # Make request
+        response = await async_client.post(
+            "/api/v1/guests/",
+            json={
+                "email": "api.guest@example.com",
+                "partner_company_id": partner.id,
+                "display_name": "API Guest",
+                "role": "partner_viewer",
+                "send_notification": True,
+            },
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+    assert response.status_code == status.HTTP_201_CREATED
+    data = response.json()
+    assert data["email"] == "api.guest@example.com"
+    assert data["status"] == "invited"
+
+
+@pytest.mark.asyncio
+async def test_invite_guest_invalid_email(
+    async_client: AsyncClient,
+    async_test_db: AsyncSession,
+    mock_current_user: dict,
+):
+    """Test guest invitation with invalid email."""
+    # Create partner company
+    partner = PartnerCompany(
+        company_code="API_PARTNER2",
+        name="API Test Partner 2",
+        short_name="ATP2",
+    )
+    async_test_db.add(partner)
+    await async_test_db.commit()
+
+    # Make request with invalid email
+    response = await async_client.post(
+        "/api/v1/guests/",
+        json={
+            "email": "not-an-email",
+            "partner_company_id": partner.id,
+            "role": "partner_viewer",
+        },
+        headers={"Authorization": "Bearer test-token"},
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+@pytest.mark.asyncio
+async def test_invite_guest_invalid_role(
+    async_client: AsyncClient,
+    async_test_db: AsyncSession,
+    mock_current_user: dict,
+):
+    """Test guest invitation with invalid role."""
+    # Create partner company
+    partner = PartnerCompany(
+        company_code="API_PARTNER3",
+        name="API Test Partner 3",
+        short_name="ATP3",
+    )
+    async_test_db.add(partner)
+    await async_test_db.commit()
+
+    # Make request with invalid role
+    response = await async_client.post(
+        "/api/v1/guests/",
+        json={
+            "email": "guest@example.com",
+            "partner_company_id": partner.id,
+            "role": "invalid_role",
+        },
+        headers={"Authorization": "Bearer test-token"},
+    )
+
+    assert response.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+@pytest.mark.asyncio
+async def test_list_guests(
+    async_client: AsyncClient,
+    async_test_db: AsyncSession,
+    mock_current_user: dict,
+):
+    """Test listing guest users."""
+    # Create partner companies
+    partner1 = PartnerCompany(
+        company_code="LIST_P1",
+        name="List Partner 1",
+        short_name="LP1",
+    )
+    partner2 = PartnerCompany(
+        company_code="LIST_P2",
+        name="List Partner 2",
+        short_name="LP2",
+    )
+    async_test_db.add_all([partner1, partner2])
+    await async_test_db.commit()
+
+    # Create guest users
+    guests = [
+        GuestUser(
+            email="guest1@example.com",
+            partner_company_id=partner1.id,
+            status=GuestStatus.ACCEPTED,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        ),
+        GuestUser(
+            email="guest2@example.com",
+            partner_company_id=partner1.id,
+            status=GuestStatus.INVITED,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        ),
+        GuestUser(
+            email="guest3@example.com",
+            partner_company_id=partner2.id,
+            status=GuestStatus.ACCEPTED,
+            created_at=datetime.now(UTC),
+            updated_at=datetime.now(UTC),
+        ),
+    ]
+    async_test_db.add_all(guests)
+    await async_test_db.commit()
+
+    # List all guests
+    response = await async_client.get(
+        "/api/v1/guests/",
+        headers={"Authorization": "Bearer test-token"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["total"] == 3
+    assert len(data["guests"]) == 3
+
+    # List guests with filter
+    response = await async_client.get(
+        "/api/v1/guests/?partner_company_id=" + str(partner1.id),
+        headers={"Authorization": "Bearer test-token"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["total"] == 2
+
+    # List guests with status filter
+    response = await async_client.get(
+        "/api/v1/guests/?status=accepted",
+        headers={"Authorization": "Bearer test-token"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["total"] == 2
+
+
+@pytest.mark.asyncio
+async def test_get_guest_details(
+    async_client: AsyncClient,
+    async_test_db: AsyncSession,
+    mock_current_user: dict,
+):
+    """Test getting individual guest details."""
+    # Create partner and guest
+    partner = PartnerCompany(
+        company_code="DETAIL_P",
+        name="Detail Partner",
+        short_name="DP",
+    )
+    async_test_db.add(partner)
+    await async_test_db.commit()
+
+    guest = GuestUser(
+        email="detail.guest@example.com",
+        display_name="Detail Guest",
+        partner_company_id=partner.id,
+        status=GuestStatus.ACCEPTED,
+        azure_ad_id="azure-detail-123",
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+    async_test_db.add(guest)
+    await async_test_db.commit()
+
+    # Get guest details
+    response = await async_client.get(
+        f"/api/v1/guests/{guest.id}",
+        headers={"Authorization": "Bearer test-token"},
+    )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["id"] == str(guest.id)
+    assert data["email"] == "detail.guest@example.com"
+    assert data["display_name"] == "Detail Guest"
+    assert data["status"] == "accepted"
+    assert data["azure_ad_id"] == "azure-detail-123"
+
+    # Try to get non-existent guest
+    fake_id = uuid4()
+    response = await async_client.get(
+        f"/api/v1/guests/{fake_id}",
+        headers={"Authorization": "Bearer test-token"},
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.asyncio
+async def test_check_guest_status_endpoint(
+    async_client: AsyncClient,
+    async_test_db: AsyncSession,
+    mock_current_user: dict,
+):
+    """Test checking guest invitation status."""
+    # Create partner and guest
+    partner = PartnerCompany(
+        company_code="STATUS_P",
+        name="Status Partner",
+        short_name="SP",
+    )
+    async_test_db.add(partner)
+    await async_test_db.commit()
+
+    guest = GuestUser(
+        email="status.guest@example.com",
+        partner_company_id=partner.id,
+        status=GuestStatus.INVITED,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+    async_test_db.add(guest)
+    await async_test_db.commit()
+
+    # Mock guest service
+    with patch("api.routers.guests.GuestService") as MockService:
+        mock_service = MockService.return_value
+        mock_service.find_guest_by_email = AsyncMock(return_value=guest)
+        mock_service.check_invitation_status = AsyncMock(
+            return_value={
+                "status": "pending",
+                "guest_status": GuestStatus.INVITED,
+                "invitation_id": "inv-status-123",
+                "expires_at": datetime.now(UTC) + timedelta(days=30),
+            }
+        )
+
+        # Check status
+        response = await async_client.get(
+            "/api/v1/guests/status/status.guest@example.com",
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["email"] == "status.guest@example.com"
+    assert data["status"] == "pending"
+    assert data["guest_status"] == "invited"
+    assert data["message"] == "Invitation is pending acceptance"
+
+    # Check non-existent guest
+    with patch("api.routers.guests.GuestService") as MockService:
+        mock_service = MockService.return_value
+        mock_service.find_guest_by_email = AsyncMock(return_value=None)
+
+        response = await async_client.get(
+            "/api/v1/guests/status/notfound@example.com",
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["status"] == "not_found"
+    assert "No guest found" in data["message"]
+
+
+@pytest.mark.asyncio
+async def test_update_guest_groups_endpoint(
+    async_client: AsyncClient,
+    async_test_db: AsyncSession,
+    mock_current_user: dict,
+):
+    """Test updating guest group assignments."""
+    # Create partner, guest, and groups
+    partner = PartnerCompany(
+        company_code="GROUP_P",
+        name="Group Partner",
+        short_name="GP",
+    )
+    async_test_db.add(partner)
+
+    guest = GuestUser(
+        email="group.guest@example.com",
+        partner_company_id=partner.id,
+        status=GuestStatus.ACCEPTED,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+    async_test_db.add(guest)
+
+    groups = [
+        Group(azure_ad_group_id="api-group1", display_name="API Group 1"),
+        Group(azure_ad_group_id="api-group2", display_name="API Group 2"),
+    ]
+    async_test_db.add_all(groups)
+    await async_test_db.commit()
+
+    # Mock guest service
+    with patch("api.routers.guests.GuestService") as MockService:
+        mock_service = MockService.return_value
+        mock_service.update_guest_groups = AsyncMock()
+
+        # Update groups
+        response = await async_client.patch(
+            f"/api/v1/guests/{guest.id}/groups",
+            json={"group_ids": [str(g.id) for g in groups]},
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+    assert response.status_code == status.HTTP_200_OK
+
+    # Try with non-existent guest
+    fake_id = uuid4()
+    response = await async_client.patch(
+        f"/api/v1/guests/{fake_id}/groups",
+        json={"group_ids": [str(groups[0].id)]},
+        headers={"Authorization": "Bearer test-token"},
+    )
+
+    assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    # Try with non-existent group
+    fake_group_id = uuid4()
+    response = await async_client.patch(
+        f"/api/v1/guests/{guest.id}/groups",
+        json={"group_ids": [str(fake_group_id)]},
+        headers={"Authorization": "Bearer test-token"},
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.asyncio
+async def test_resend_invitation_endpoint(
+    async_client: AsyncClient,
+    async_test_db: AsyncSession,
+    mock_current_user: dict,
+):
+    """Test resending invitation to a guest."""
+    # Create partner and guest
+    partner = PartnerCompany(
+        company_code="RESEND_P",
+        name="Resend Partner",
+        short_name="RP",
+    )
+    async_test_db.add(partner)
+    await async_test_db.commit()
+
+    # Test with expired guest
+    expired_guest = GuestUser(
+        email="expired.guest@example.com",
+        display_name="Expired Guest",
+        partner_company_id=partner.id,
+        status=GuestStatus.EXPIRED,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+    async_test_db.add(expired_guest)
+    await async_test_db.commit()
+
+    # Mock guest service
+    with patch("api.routers.guests.GuestService") as MockService:
+        mock_service = MockService.return_value
+        mock_guest = GuestUser(
+            id=expired_guest.id,
+            email=expired_guest.email,
+            display_name=expired_guest.display_name,
+            partner_company_id=expired_guest.partner_company_id,
+            status=GuestStatus.INVITED,
+            invited_at=datetime.now(UTC),
+            created_at=expired_guest.created_at,
+            updated_at=datetime.now(UTC),
+        )
+        mock_service.invite_guest = AsyncMock(return_value=mock_guest)
+
+        # Resend invitation
+        response = await async_client.post(
+            f"/api/v1/guests/{expired_guest.id}/resend-invitation",
+            headers={"Authorization": "Bearer test-token"},
+        )
+
+    assert response.status_code == status.HTTP_200_OK
+    data = response.json()
+    assert data["status"] == "invited"
+
+    # Test with already accepted guest
+    accepted_guest = GuestUser(
+        email="accepted.guest@example.com",
+        partner_company_id=partner.id,
+        status=GuestStatus.ACCEPTED,
+        created_at=datetime.now(UTC),
+        updated_at=datetime.now(UTC),
+    )
+    async_test_db.add(accepted_guest)
+    await async_test_db.commit()
+
+    response = await async_client.post(
+        f"/api/v1/guests/{accepted_guest.id}/resend-invitation",
+        headers={"Authorization": "Bearer test-token"},
+    )
+
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
+    assert "already_accepted" in response.json()["detail"]["error"]
+
+
+@pytest.mark.asyncio
+async def test_guest_endpoints_require_auth(async_client: AsyncClient):
+    """Test that guest endpoints require authentication."""
+    endpoints = [
+        ("POST", "/api/v1/guests/"),
+        ("GET", "/api/v1/guests/"),
+        ("GET", f"/api/v1/guests/{uuid4()}"),
+        ("GET", "/api/v1/guests/status/test@example.com"),
+        ("PATCH", f"/api/v1/guests/{uuid4()}/groups"),
+        ("POST", f"/api/v1/guests/{uuid4()}/resend-invitation"),
+    ]
+
+    for method, endpoint in endpoints:
+        if method == "POST":
+            response = await async_client.post(endpoint, json={})
+        elif method == "GET":
+            response = await async_client.get(endpoint)
+        elif method == "PATCH":
+            response = await async_client.patch(endpoint, json={})
+
+        # Should return 401 or 403 without auth
+        assert response.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_403_FORBIDDEN,
+            status.HTTP_422_UNPROCESSABLE_ENTITY,  # Some endpoints may fail validation first
+        ]
