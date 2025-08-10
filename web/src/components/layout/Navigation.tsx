@@ -84,32 +84,32 @@ export const Navigation = () => {
   const navItems: NavItem[] = [
     {
       to: '/dashboard',
-      label: 'Dashboard',
+      label: 'Vezérlőpult',
       icon: <Home24Regular />,
     },
     {
       to: '/contracts',
-      label: 'Contracts',
+      label: 'Szerződések',
       icon: <Document24Regular />,
       requiredRoles: ['NEU_Admin', 'NEU_PM'],
       requireAny: true,
     },
     {
       to: '/orders',
-      label: 'Orders',
+      label: 'Megrendelések',
       icon: <ShoppingBag24Regular />,
       requiredRoles: ['NEU_Admin', 'NEU_PM'],
       requireAny: true,
     },
     {
       to: '/templates',
-      label: 'Templates',
+      label: 'Sablonok',
       icon: <DocumentTable24Regular />,
       requiredRoles: ['NEU_Admin'],
     },
     {
       to: '/locks',
-      label: 'Locks',
+      label: 'Zárolások',
       icon: <LockClosed24Regular />,
       requiredRoles: ['NEU_Admin', 'NEU_PM'],
       requireAny: true,
@@ -119,19 +119,19 @@ export const Navigation = () => {
   const adminItems: NavItem[] = [
     {
       to: '/users',
-      label: 'Users & Groups',
+      label: 'Felhasználók és Csoportok',
       icon: <People24Regular />,
       requiredRoles: ['NEU_Admin'],
     },
     {
       to: '/permissions',
-      label: 'Permissions',
+      label: 'Jogosultságok',
       icon: <Shield24Regular />,
       requiredRoles: ['NEU_Admin'],
     },
     {
       to: '/guests',
-      label: 'Guest Management',
+      label: 'Vendég Kezelés',
       icon: <PersonAdd24Regular />,
       requiredRoles: ['NEU_Admin', 'NEU_PM'],
       requireAny: true,
@@ -141,20 +141,20 @@ export const Navigation = () => {
   const systemItems: NavItem[] = [
     {
       to: '/reports',
-      label: 'Reports',
+      label: 'Jelentések',
       icon: <DocumentBulletList24Regular />,
       requiredRoles: ['NEU_Admin', 'NEU_PM'],
       requireAny: true,
     },
     {
       to: '/audit',
-      label: 'Audit',
+      label: 'Audit Napló',
       icon: <ClipboardPulse24Regular />,
       requiredRoles: ['NEU_Admin'],
     },
     {
       to: '/settings',
-      label: 'Settings',
+      label: 'Beállítások',
       icon: <Settings24Regular />,
     },
   ];
@@ -195,13 +195,13 @@ export const Navigation = () => {
   };
 
   return (
-    <nav className={styles.nav} role="navigation" aria-label="Main navigation" id="main-navigation">
+    <nav className={styles.nav} role="navigation" aria-label="Fő navigáció" id="main-navigation">
       {visibleNavItems.map(renderNavItem)}
       
       {visibleAdminItems.length > 0 && (
         <div className={styles.navSection}>
           <div className={styles.sectionTitle} role="heading" aria-level={3}>
-            Administration
+            Adminisztráció
           </div>
           {visibleAdminItems.map(renderNavItem)}
         </div>
@@ -210,7 +210,7 @@ export const Navigation = () => {
       {visibleSystemItems.length > 0 && (
         <div className={styles.navSection}>
           <div className={styles.sectionTitle} role="heading" aria-level={3}>
-            System
+            Rendszer
           </div>
           {visibleSystemItems.map(renderNavItem)}
         </div>

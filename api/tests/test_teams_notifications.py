@@ -1,4 +1,5 @@
 """Tests for Teams notification functionality."""
+
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 from uuid import uuid4

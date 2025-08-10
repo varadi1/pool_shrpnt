@@ -4,12 +4,11 @@ test.describe('Navigation and Role-Based Access', () => {
   test('should show admin navigation items for admin users', async ({ page }) => {
     // Mock admin authentication
     await page.addInitScript(() => {
+      (window as any).__MSAL_MOCK__ = true;
       window.sessionStorage.setItem('mock-account', JSON.stringify({
         username: 'admin@example.com',
         name: 'Admin User',
-        idTokenClaims: {
-          roles: ['NEU_Admin']
-        }
+        idTokenClaims: { roles: ['NEU_Admin'] }
       }));
     });
 
@@ -33,12 +32,11 @@ test.describe('Navigation and Role-Based Access', () => {
   test('should show limited navigation items for PM users', async ({ page }) => {
     // Mock PM authentication
     await page.addInitScript(() => {
+      (window as any).__MSAL_MOCK__ = true;
       window.sessionStorage.setItem('mock-account', JSON.stringify({
         username: 'pm@example.com',
         name: 'PM User',
-        idTokenClaims: {
-          roles: ['NEU_PM']
-        }
+        idTokenClaims: { roles: ['NEU_PM'] }
       }));
     });
 
@@ -65,12 +63,11 @@ test.describe('Navigation and Role-Based Access', () => {
   test('should navigate between pages correctly', async ({ page }) => {
     // Mock authentication
     await page.addInitScript(() => {
+      (window as any).__MSAL_MOCK__ = true;
       window.sessionStorage.setItem('mock-account', JSON.stringify({
         username: 'admin@example.com',
         name: 'Admin User',
-        idTokenClaims: {
-          roles: ['NEU_Admin']
-        }
+        idTokenClaims: { roles: ['NEU_Admin'] }
       }));
     });
 
@@ -95,12 +92,11 @@ test.describe('Navigation and Role-Based Access', () => {
   test('should block access to unauthorized routes', async ({ page }) => {
     // Mock PM authentication (limited access)
     await page.addInitScript(() => {
+      (window as any).__MSAL_MOCK__ = true;
       window.sessionStorage.setItem('mock-account', JSON.stringify({
         username: 'pm@example.com',
         name: 'PM User',
-        idTokenClaims: {
-          roles: ['NEU_PM']
-        }
+        idTokenClaims: { roles: ['NEU_PM'] }
       }));
     });
 
@@ -117,12 +113,11 @@ test.describe('Navigation and Role-Based Access', () => {
     
     // Mock authentication
     await page.addInitScript(() => {
+      (window as any).__MSAL_MOCK__ = true;
       window.sessionStorage.setItem('mock-account', JSON.stringify({
         username: 'admin@example.com',
         name: 'Admin User',
-        idTokenClaims: {
-          roles: ['NEU_Admin']
-        }
+        idTokenClaims: { roles: ['NEU_Admin'] }
       }));
     });
 
@@ -152,12 +147,11 @@ test.describe('Navigation and Role-Based Access', () => {
   test('should support keyboard navigation', async ({ page }) => {
     // Mock authentication
     await page.addInitScript(() => {
+      (window as any).__MSAL_MOCK__ = true;
       window.sessionStorage.setItem('mock-account', JSON.stringify({
         username: 'admin@example.com',
         name: 'Admin User',
-        idTokenClaims: {
-          roles: ['NEU_Admin']
-        }
+        idTokenClaims: { roles: ['NEU_Admin'] }
       }));
     });
 
@@ -182,12 +176,11 @@ test.describe('Navigation and Role-Based Access', () => {
   test('should highlight active navigation item', async ({ page }) => {
     // Mock authentication
     await page.addInitScript(() => {
+      (window as any).__MSAL_MOCK__ = true;
       window.sessionStorage.setItem('mock-account', JSON.stringify({
         username: 'admin@example.com',
         name: 'Admin User',
-        idTokenClaims: {
-          roles: ['NEU_Admin']
-        }
+        idTokenClaims: { roles: ['NEU_Admin'] }
       }));
     });
 
@@ -211,12 +204,11 @@ test.describe('Navigation and Role-Based Access', () => {
   test('should show skip navigation link', async ({ page }) => {
     // Mock authentication
     await page.addInitScript(() => {
+      (window as any).__MSAL_MOCK__ = true;
       window.sessionStorage.setItem('mock-account', JSON.stringify({
         username: 'admin@example.com',
         name: 'Admin User',
-        idTokenClaims: {
-          roles: ['NEU_Admin']
-        }
+        idTokenClaims: { roles: ['NEU_Admin'] }
       }));
     });
 

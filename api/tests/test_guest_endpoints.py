@@ -21,7 +21,7 @@ def mock_current_user():
         "id": str(uuid4()),
         "email": "admin@example.com",
         "name": "Test Admin",
-        "roles": ["NEU_Admin"]
+        "roles": ["NEU_Admin"],
     }
 
 
@@ -30,10 +30,10 @@ async def authenticated_client(async_client: AsyncClient, mock_current_user: dic
     """Create an authenticated test client."""
     from api.dependencies.auth import get_current_user
     from api.main import app
-    
+
     async def override_get_current_user():
         return mock_current_user
-    
+
     app.dependency_overrides[get_current_user] = override_get_current_user
     yield async_client
     # Clear is handled by async_client fixture
@@ -260,9 +260,7 @@ async def test_check_guest_status_endpoint(
     await async_test_db.commit()
 
     # Make request
-    response = await authenticated_client.get(
-        f"/api/v1/guests/status/status.guest@example.com"
-    )
+    response = await authenticated_client.get(f"/api/v1/guests/status/status.guest@example.com")
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()
@@ -346,9 +344,7 @@ async def test_resend_invitation_endpoint(
         mock_service.resend_invitation = AsyncMock(return_value=guest)
 
         # Make request
-        response = await authenticated_client.post(
-            f"/api/v1/guests/{guest.id}/resend"
-        )
+        response = await authenticated_client.post(f"/api/v1/guests/{guest.id}/resend")
 
     assert response.status_code == status.HTTP_200_OK
     data = response.json()

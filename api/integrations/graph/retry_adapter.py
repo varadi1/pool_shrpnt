@@ -285,9 +285,7 @@ class GraphRetryAdapter:
 
                 if attempt < self.max_retries:
                     # Calculate delay with exponential backoff and jitter
-                    delay = min(
-                        self.base_delay * (self.exponential_base**attempt), self.max_delay
-                    )
+                    delay = min(self.base_delay * (self.exponential_base**attempt), self.max_delay)
                     jitter = random.uniform(0, delay * 0.1)  # Add 10% jitter
                     total_delay = delay + jitter
 

@@ -28,8 +28,8 @@ describe('Navigation', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
-    expect(screen.getByText('Settings')).toBeInTheDocument();
+    expect(screen.getByText('Vezérlőpult')).toBeInTheDocument();
+    expect(screen.getByText('Beállítások')).toBeInTheDocument();
   });
 
   it('renders admin-only items for admin users', () => {
@@ -48,10 +48,10 @@ describe('Navigation', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Templates')).toBeInTheDocument();
-    expect(screen.getByText('Users & Groups')).toBeInTheDocument();
-    expect(screen.getByText('Permissions')).toBeInTheDocument();
-    expect(screen.getByText('Audit')).toBeInTheDocument();
+    expect(screen.getByText('Sablonok')).toBeInTheDocument();
+    expect(screen.getByText('Felhasználók és Csoportok')).toBeInTheDocument();
+    expect(screen.getByText('Jogosultságok')).toBeInTheDocument();
+    expect(screen.getByText('Audit Napló')).toBeInTheDocument();
   });
 
   it('renders PM-accessible items for PM users', () => {
@@ -70,17 +70,17 @@ describe('Navigation', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Contracts')).toBeInTheDocument();
-    expect(screen.getByText('Orders')).toBeInTheDocument();
-    expect(screen.getByText('Locks')).toBeInTheDocument();
-    expect(screen.getByText('Guest Management')).toBeInTheDocument();
-    expect(screen.getByText('Reports')).toBeInTheDocument();
+    expect(screen.getByText('Szerződések')).toBeInTheDocument();
+    expect(screen.getByText('Megrendelések')).toBeInTheDocument();
+    expect(screen.getByText('Zárolások')).toBeInTheDocument();
+    expect(screen.getByText('Vendég Kezelés')).toBeInTheDocument();
+    expect(screen.getByText('Jelentések')).toBeInTheDocument();
     
     // Should not see admin-only items
-    expect(screen.queryByText('Templates')).not.toBeInTheDocument();
-    expect(screen.queryByText('Users & Groups')).not.toBeInTheDocument();
-    expect(screen.queryByText('Permissions')).not.toBeInTheDocument();
-    expect(screen.queryByText('Audit')).not.toBeInTheDocument();
+    expect(screen.queryByText('Sablonok')).not.toBeInTheDocument();
+    expect(screen.queryByText('Felhasználók és Csoportok')).not.toBeInTheDocument();
+    expect(screen.queryByText('Jogosultságok')).not.toBeInTheDocument();
+    expect(screen.queryByText('Audit Napló')).not.toBeInTheDocument();
   });
 
   it('hides role-restricted items from unauthorized users', () => {
@@ -95,15 +95,15 @@ describe('Navigation', () => {
       </BrowserRouter>
     );
 
-    // Should not see role-restricted items
+    // Should not see role-restricted items (English fallbacks from previous tests)
     expect(screen.queryByText('Contracts')).not.toBeInTheDocument();
     expect(screen.queryByText('Orders')).not.toBeInTheDocument();
     expect(screen.queryByText('Templates')).not.toBeInTheDocument();
     expect(screen.queryByText('Users & Groups')).not.toBeInTheDocument();
     
-    // Should see unrestricted items
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
-    expect(screen.getByText('Settings')).toBeInTheDocument();
+    // Should see unrestricted items (Hungarian labels)
+    expect(screen.getByText('Vezérlőpult')).toBeInTheDocument();
+    expect(screen.getByText('Beállítások')).toBeInTheDocument();
   });
 
   it('highlights active route', () => {
@@ -118,10 +118,10 @@ describe('Navigation', () => {
       </MemoryRouter>
     );
 
-    const contractsLink = screen.getByRole('link', { name: /Contracts/i });
+    const contractsLink = screen.getByRole('link', { name: /Szerződések/i });
     expect(contractsLink).toHaveAttribute('aria-current', 'page');
     
-    const dashboardLink = screen.getByRole('link', { name: /Dashboard/i });
+    const dashboardLink = screen.getByRole('link', { name: /Vezérlőpult/i });
     expect(dashboardLink).not.toHaveAttribute('aria-current');
   });
 
@@ -137,7 +137,7 @@ describe('Navigation', () => {
       </MemoryRouter>
     );
 
-    const contractsLink = screen.getByRole('link', { name: /Contracts/i });
+    const contractsLink = screen.getByRole('link', { name: /Szerződések/i });
     expect(contractsLink).toHaveAttribute('aria-current', 'page');
   });
 
@@ -159,6 +159,7 @@ describe('Navigation', () => {
     expect(hrefs).toContain('/dashboard');
     expect(hrefs).toContain('/contracts');
     expect(hrefs).toContain('/orders');
+    // '/orders/new' is not a top-level nav link anymore
     expect(hrefs).toContain('/templates');
     expect(hrefs).toContain('/locks');
     expect(hrefs).toContain('/users');
@@ -183,8 +184,8 @@ describe('Navigation', () => {
       </BrowserRouter>
     );
 
-    const dashboardLink = screen.getByRole('link', { name: /Dashboard/i });
-    const contractsLink = screen.getByRole('link', { name: /Contracts/i });
+    const dashboardLink = screen.getByRole('link', { name: /Vezérlőpult/i });
+    const contractsLink = screen.getByRole('link', { name: /Szerződések/i });
 
     // All links should be tabbable
     expect(dashboardLink).toHaveAttribute('tabIndex', '0');
@@ -210,8 +211,8 @@ describe('Navigation', () => {
       </BrowserRouter>
     );
 
-    expect(screen.getByText('Administration')).toBeInTheDocument();
-    expect(screen.getByText('System')).toBeInTheDocument();
+    expect(screen.getByText('Adminisztráció')).toBeInTheDocument();
+    expect(screen.getByText('Rendszer')).toBeInTheDocument();
   });
 
   it('does not render empty sections', () => {
@@ -227,7 +228,7 @@ describe('Navigation', () => {
     );
 
     // Should not see section headings when no items in section
-    expect(screen.queryByText('Administration')).not.toBeInTheDocument();
+    expect(screen.queryByText('Adminisztráció')).not.toBeInTheDocument();
   });
 
   it('has proper ARIA attributes', () => {
@@ -243,7 +244,7 @@ describe('Navigation', () => {
     );
 
     const nav = screen.getByRole('navigation');
-    expect(nav).toHaveAttribute('aria-label', 'Main navigation');
+    expect(nav).toHaveAttribute('aria-label', 'Fő navigáció');
 
     const sectionHeadings = screen.getAllByRole('heading', { level: 3 });
     expect(sectionHeadings).toHaveLength(2);

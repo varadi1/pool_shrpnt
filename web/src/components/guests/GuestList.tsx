@@ -7,8 +7,6 @@ import {
   DataGridRow,
   DataGridCell,
   TableCellLayout,
-  TableColumnDefinition,
-  createTableColumn,
   Button,
   Badge,
   Input,
@@ -132,14 +130,19 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
   const [revocationModalOpen, setRevocationModalOpen] = useState(false);
   const [revocationTarget, setRevocationTarget] = useState<Guest | Guest[] | null>(null);
   const [extensionTarget, setExtensionTarget] = useState<Guest | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [success, setSuccess] = useState<string | null>(null);
 
   const fetchGuests = async () => {
     try {
       setError(null);
-      const response = await api.get('/api/guests');
-      setGuests(response.data.items || []);
+      const response = await api.getGuests({ page, page_size: pageSize });
+      setGuests(response.items || []);
+      setTotal(response.total ?? response.items?.length ?? 0);
     } catch (err: unknown) {
-      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to load guests');
+      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Nem sikerült betölteni a vendégeket');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -148,7 +151,8 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
 
   useEffect(() => {
     fetchGuests();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page]);
 
   const handleRefresh = () => {
     setRefreshing(true);
@@ -157,10 +161,11 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
 
   const handleResendInvitation = async (guestId: string) => {
     try {
-      await api.post(`/api/guests/${guestId}/resend`);
+      await api.resendInvitation(guestId);
+      setSuccess('Meghívó sikeresen újraküldve');
       await fetchGuests();
     } catch (err: unknown) {
-      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to resend invitation');
+      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Nem sikerült újraküldeni a meghívót');
     }
   };
 
@@ -210,7 +215,7 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
     if (daysUntilExpiry < 0) {
       return (
         <Badge appearance="filled" color="danger" size="small">
-          Expired
+          Lejárt
         </Badge>
       );
     } else if (daysUntilExpiry <= 7) {
@@ -244,7 +249,7 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
             icon={<Clock20Filled />}
             className={styles.statusBadge}
           >
-            Pending
+            Függőben
           </Badge>
         );
       case 'INVITED':
@@ -255,7 +260,7 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
             icon={<Mail20Regular />}
             className={styles.statusBadge}
           >
-            Invited
+            Meghívva
           </Badge>
         );
       case 'ACCEPTED':
@@ -266,7 +271,7 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
             icon={<CheckmarkCircle20Filled />}
             className={styles.statusBadge}
           >
-            Accepted
+            Elfogadva
           </Badge>
         );
       case 'EXPIRED':
@@ -277,7 +282,7 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
             icon={<Warning20Filled />}
             className={styles.statusBadge}
           >
-            Expired
+            Lejárt
           </Badge>
         );
       case 'REVOKED':
@@ -288,11 +293,11 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
             icon={<DismissCircle20Filled />}
             className={styles.statusBadge}
           >
-            Revoked
+            Visszavonva
           </Badge>
         );
       default:
-        return <Badge appearance="tint">Unknown</Badge>;
+        return <Badge appearance="tint">Ismeretlen</Badge>;
     }
   };
 
@@ -310,157 +315,142 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
     });
   }, [guests, searchTerm, statusFilter]);
 
-  const columns: TableColumnDefinition<Guest>[] = [
-    createTableColumn<Guest>({
-      columnId: 'selection',
-      renderHeaderCell: () => (
-        <Checkbox
-          checked={selectedGuests.size === filteredGuests.length && filteredGuests.length > 0}
-          onChange={toggleSelectAll}
-          aria-label="Select all"
-        />
-      ),
-      renderCell: (guest) => (
-        <TableCellLayout>
-          <Checkbox
-            checked={selectedGuests.has(guest.id)}
-            onChange={() => toggleGuestSelection(guest.id)}
-            aria-label={`Select ${guest.display_name}`}
-          />
-        </TableCellLayout>
-      ),
-    }),
-    createTableColumn<Guest>({
-      columnId: 'display_name',
-      renderHeaderCell: () => 'Name',
-      renderCell: (guest) => (
-        <TableCellLayout>
-          <strong>{guest.display_name}</strong>
-        </TableCellLayout>
-      ),
-      compare: (a, b) => a.display_name.localeCompare(b.display_name),
-    }),
-    createTableColumn<Guest>({
-      columnId: 'email',
-      renderHeaderCell: () => 'Email',
-      renderCell: (guest) => (
-        <TableCellLayout media={<Mail20Regular />}>
-          {guest.email}
-        </TableCellLayout>
-      ),
-      compare: (a, b) => a.email.localeCompare(b.email),
-    }),
-    createTableColumn<Guest>({
-      columnId: 'partner_company',
-      renderHeaderCell: () => 'Partner Company',
-      renderCell: (guest) => (
-        <TableCellLayout media={<Building20Regular />}>
-          {guest.partner_company_name || guest.partner_company_id}
-        </TableCellLayout>
-      ),
-    }),
-    createTableColumn<Guest>({
-      columnId: 'status',
-      renderHeaderCell: () => 'Status',
-      renderCell: (guest) => (
-        <TableCellLayout>{getStatusBadge(guest.status)}</TableCellLayout>
-      ),
-    }),
-    createTableColumn<Guest>({
-      columnId: 'invited_at',
-      renderHeaderCell: () => 'Invited',
-      renderCell: (guest) => (
-        <TableCellLayout media={<Clock20Regular />}>
-          <Caption1>
-            {new Date(guest.invited_at).toLocaleDateString()}
-          </Caption1>
-        </TableCellLayout>
-      ),
-      compare: (a, b) => new Date(a.invited_at).getTime() - new Date(b.invited_at).getTime(),
-    }),
-    createTableColumn<Guest>({
-      columnId: 'accepted_at',
-      renderHeaderCell: () => 'Accepted',
-      renderCell: (guest) => (
-        <TableCellLayout>
-          {guest.accepted_at ? (
-            <Caption1>{new Date(guest.accepted_at).toLocaleDateString()}</Caption1>
-          ) : (
-            <Caption1>-</Caption1>
-          )}
-        </TableCellLayout>
-      ),
-    }),
-    createTableColumn<Guest>({
-      columnId: 'expires_at',
-      renderHeaderCell: () => 'Expiry',
-      renderCell: (guest) => (
-        <TableCellLayout>
-          {guest.expires_at ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Caption1>{new Date(guest.expires_at).toLocaleDateString()}</Caption1>
-              {getExpiryBadge(guest)}
-            </div>
-          ) : (
-            <Caption1>-</Caption1>
-          )}
-        </TableCellLayout>
-      ),
-    }),
-    createTableColumn<Guest>({
-      columnId: 'actions',
-      renderHeaderCell: () => 'Actions',
-      renderCell: (guest) => (
-        <TableCellLayout>
-          <div className={styles.actionButtons}>
-            {guest.status === 'INVITED' && (
+  const columnIds = ['selection', 'display_name', 'email', 'partner_company', 'status', 'invited_at', 'accepted_at', 'expires_at', 'actions'];
+  const columnHeaders = {
+    selection: (
+      <Checkbox
+        checked={selectedGuests.size === filteredGuests.length && filteredGuests.length > 0}
+        onChange={toggleSelectAll}
+        aria-label="Összes kijelölése"
+      />
+    ),
+    display_name: 'Név',
+    email: 'Email Cím',
+    partner_company: 'Partner Cég',
+    status: 'Státusz',
+    invited_at: 'Meghívva',
+    accepted_at: 'Elfogadva',
+    expires_at: 'Lejárat',
+    actions: 'Műveletek'
+  };
+
+  const renderCellContent = (guest: Guest, columnId: string) => {
+    switch (columnId) {
+      case 'selection':
+        return (
+          <TableCellLayout>
+            <Checkbox
+              checked={selectedGuests.has(guest.id)}
+              onChange={() => toggleGuestSelection(guest.id)}
+              aria-label={`${guest.display_name} kijelölése`}
+            />
+          </TableCellLayout>
+        );
+      case 'display_name':
+        return (
+          <TableCellLayout>
+            <strong>{guest.display_name}</strong>
+          </TableCellLayout>
+        );
+      case 'email':
+        return (
+          <TableCellLayout media={<Mail20Regular />}>
+            {guest.email}
+          </TableCellLayout>
+        );
+      case 'partner_company':
+        return (
+          <TableCellLayout media={<Building20Regular />}>
+            {guest.partner_company_name || guest.partner_company_id}
+          </TableCellLayout>
+        );
+      case 'status':
+        return <TableCellLayout>{getStatusBadge(guest.status)}</TableCellLayout>;
+      case 'invited_at':
+        return (
+          <TableCellLayout media={<Clock20Regular />}>
+            <Caption1>
+              {new Date(guest.invited_at).toLocaleDateString()}
+            </Caption1>
+          </TableCellLayout>
+        );
+      case 'accepted_at':
+        return (
+          <TableCellLayout>
+            {guest.accepted_at ? (
+              <Caption1>{new Date(guest.accepted_at).toLocaleDateString()}</Caption1>
+            ) : (
+              <Caption1>-</Caption1>
+            )}
+          </TableCellLayout>
+        );
+      case 'expires_at':
+        return (
+          <TableCellLayout>
+            {guest.expires_at ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Caption1>{new Date(guest.expires_at).toLocaleDateString()}</Caption1>
+                {getExpiryBadge(guest)}
+              </div>
+            ) : (
+              <Caption1>-</Caption1>
+            )}
+          </TableCellLayout>
+        );
+      case 'actions':
+        return (
+          <TableCellLayout>
+            <div className={styles.actionButtons}>
+              {guest.status === 'INVITED' && (
+                <Button
+                  size="small"
+                  appearance="subtle"
+                  onClick={() => handleResendInvitation(guest.id)}
+                >
+                  Újraküldés
+                </Button>
+              )}
+              {guest.status === 'ACCEPTED' && guest.expires_at && (
+                <>
+                  <Button
+                    size="small"
+                    appearance="subtle"
+                    icon={<Calendar20Regular />}
+                    onClick={() => handleExtendGuest(guest)}
+                    title="Hozzáférés meghosszabbítása"
+                  >
+                    Meghosszabbítás
+                  </Button>
+                  <Button
+                    size="small"
+                    appearance="subtle"
+                    icon={<Delete20Regular />}
+                    onClick={() => handleRevokeGuest(guest)}
+                    title="Hozzáférés visszavonása"
+                  >
+                    Visszavonás
+                  </Button>
+                </>
+              )}
               <Button
                 size="small"
                 appearance="subtle"
-                onClick={() => handleResendInvitation(guest.id)}
+                onClick={() => onGuestSelect?.(guest)}
               >
-                Resend
+                Részletek
               </Button>
-            )}
-            {guest.status === 'ACCEPTED' && guest.expires_at && (
-              <>
-                <Button
-                  size="small"
-                  appearance="subtle"
-                  icon={<Calendar20Regular />}
-                  onClick={() => handleExtendGuest(guest)}
-                  title="Extend access"
-                >
-                  Extend
-                </Button>
-                <Button
-                  size="small"
-                  appearance="subtle"
-                  icon={<Delete20Regular />}
-                  onClick={() => handleRevokeGuest(guest)}
-                  title="Revoke access"
-                >
-                  Revoke
-                </Button>
-              </>
-            )}
-            <Button
-              size="small"
-              appearance="subtle"
-              onClick={() => onGuestSelect?.(guest)}
-            >
-              View
-            </Button>
-          </div>
-        </TableCellLayout>
-      ),
-    }),
-  ];
+            </div>
+          </TableCellLayout>
+        );
+      default:
+        return null;
+    }
+  };
 
   if (loading) {
     return (
       <div className={styles.loading}>
-        <Spinner size="large" label="Loading guests..." />
+        <Spinner size="large" label="Vendégek betöltése..." />
       </div>
     );
   }
@@ -469,14 +459,14 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
     <div className={styles.container}>
       <Card>
         <CardHeader
-          header={<Title3>Guest Users</Title3>}
+          header={<Title3>Vendég Felhasználók</Title3>}
           action={
             <Button
               appearance="primary"
               icon={<PersonAdd20Regular />}
               onClick={onInviteClick}
             >
-              Invite Guest
+              Vendég Meghívása
             </Button>
           }
         />
@@ -487,24 +477,30 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
           </MessageBar>
         )}
 
+        {success && (
+          <MessageBar intent="success" className={styles.error}>
+            <MessageBarBody>{success}</MessageBarBody>
+          </MessageBar>
+        )}
+
         {selectedGuests.size > 0 ? (
           <Toolbar className={styles.toolbar}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <Badge appearance="filled" color="informative">
-                {selectedGuests.size} selected
+               <Badge appearance="filled" color="informative">
+                 {selectedGuests.size} kijelölve
               </Badge>
               <Button
                 appearance="primary"
                 icon={<Delete20Regular />}
-                onClick={handleBulkRevoke}
+                 onClick={handleBulkRevoke}
               >
-                Revoke Selected ({selectedGuests.size})
+                 Kijelöltek visszavonása ({selectedGuests.size})
               </Button>
               <Button
                 appearance="subtle"
-                onClick={() => setSelectedGuests(new Set())}
+                 onClick={() => setSelectedGuests(new Set())}
               >
-                Clear Selection
+                 Kijelölés törlése
               </Button>
             </div>
           </Toolbar>
@@ -513,22 +509,22 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
             <div className={styles.searchBar}>
               <Input
                 contentBefore={<Search20Regular />}
-                placeholder="Search by name, email, or company..."
+                placeholder="Keresés név, email vagy cég alapján..."
                 value={searchTerm}
                 onChange={(e, data) => setSearchTerm(data.value)}
-                aria-label="Search guests"
+                aria-label="Vendégek keresése"
               />
               <Select
                 value={statusFilter}
                 onChange={(e, data) => setStatusFilter(data.value)}
-                aria-label="Filter by status"
+                aria-label="Szűrés státusz szerint"
               >
-                <option value="all">All Status</option>
-                <option value="PENDING">Pending</option>
-                <option value="INVITED">Invited</option>
-                <option value="ACCEPTED">Accepted</option>
-                <option value="EXPIRED">Expired</option>
-                <option value="REVOKED">Revoked</option>
+                <option value="all">Minden Státusz</option>
+                <option value="PENDING">Függőben</option>
+                <option value="INVITED">Meghívva</option>
+                <option value="ACCEPTED">Elfogadva</option>
+                <option value="EXPIRED">Lejárt</option>
+                <option value="REVOKED">Visszavonva</option>
               </Select>
             </div>
             <ToolbarDivider />
@@ -537,7 +533,7 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
               onClick={handleRefresh}
               disabled={refreshing}
             >
-              {refreshing ? 'Refreshing...' : 'Refresh'}
+              {refreshing ? 'Frissítés...' : 'Frissítés'}
             </ToolbarButton>
           </Toolbar>
         )}
@@ -547,7 +543,7 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
             {searchTerm || statusFilter !== 'all' ? (
               <>
                 <Warning20Filled style={{ fontSize: '48px', marginBottom: '16px' }} />
-                <p>No guests found matching your filters.</p>
+                <p>Nem található vendég a szűrési feltételeknek megfelelően.</p>
                 <Button
                   appearance="subtle"
                   onClick={() => {
@@ -555,44 +551,69 @@ export const GuestList = ({ onInviteClick, onGuestSelect }: GuestListProps) => {
                     setStatusFilter('all');
                   }}
                 >
-                  Clear Filters
+                  Szűrők törlése
                 </Button>
               </>
             ) : (
               <>
                 <PersonAdd20Regular style={{ fontSize: '48px', marginBottom: '16px' }} />
-                <p>No guest users have been invited yet.</p>
+                <p>Még nem lett vendég felhasználó meghívva.</p>
                 <Button appearance="primary" onClick={onInviteClick}>
-                  Invite First Guest
+                  Első Vendég Meghívása
                 </Button>
               </>
             )}
           </div>
         ) : (
-          <DataGrid
-            items={filteredGuests}
-            columns={columns}
-            sortable
-            getRowId={(item) => item.id}
-            resizableColumns
-          >
-            <DataGridHeader>
-              <DataGridRow>
-                {({ renderHeaderCell }) => (
-                  <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
-                )}
-              </DataGridRow>
-            </DataGridHeader>
-            <DataGridBody<Guest>>
-              {({ item, rowId }) => (
-                <DataGridRow<Guest> key={rowId}>
-                  {({ renderCell }) => (
-                    <DataGridCell>{renderCell(item)}</DataGridCell>
-                  )}
+          <>
+            <DataGrid
+              items={filteredGuests}
+              sortable
+              getRowId={(item) => item.id}
+              resizableColumns
+            >
+              <DataGridHeader>
+                <DataGridRow>
+                  {columnIds.map((columnId) => (
+                    <DataGridHeaderCell key={columnId}>
+                      {columnHeaders[columnId as keyof typeof columnHeaders]}
+                    </DataGridHeaderCell>
+                  ))}
                 </DataGridRow>
-              )}
-            </DataGridBody>
-          </DataGrid>
+              </DataGridHeader>
+              <DataGridBody>
+                {filteredGuests.map((guest) => (
+                  <DataGridRow key={guest.id}>
+                    {columnIds.map((columnId) => (
+                      <DataGridCell key={columnId}>
+                        {renderCellContent(guest, columnId)}
+                      </DataGridCell>
+                    ))}
+                  </DataGridRow>
+                ))}
+              </DataGridBody>
+            </DataGrid>
+
+            {/* Simple pagination controls for testing */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 12 }}>
+              <div>Oldal {page} / {Math.max(1, Math.ceil(total / pageSize))}</div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <Button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                >
+                  Előző
+                </Button>
+                <Button
+                  onClick={() => setPage((p) => p + 1)}
+                  disabled={page >= Math.max(1, Math.ceil(total / pageSize))}
+                  aria-label="Következő"
+                >
+                  Következő
+                </Button>
+              </div>
+            </div>
+          </>
         )}
       </Card>
       

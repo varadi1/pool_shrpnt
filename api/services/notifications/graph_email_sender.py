@@ -1,4 +1,5 @@
 """Email notification sender using Microsoft Graph API."""
+
 import logging
 from typing import Any
 from uuid import UUID

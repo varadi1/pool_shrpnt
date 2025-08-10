@@ -1,6 +1,7 @@
 """Guest lifecycle notification templates."""
 
 from datetime import datetime
+from enum import Enum
 from typing import Any, Dict, Optional
 from uuid import UUID
 
@@ -10,9 +11,24 @@ from api.core.config import settings
 BASE_URL = getattr(settings, "app_base_url", "https://pooldrv.example.com")
 
 
+class NotificationLanguage(Enum):
+    """Supported notification languages."""
+
+    EN = "en"
+    HU = "hu"
+
+
+class RecipientType(Enum):
+    """Types of notification recipients."""
+
+    GUEST = "guest"
+    ADMIN = "admin"
+    INVITER = "inviter"
+
+
 class GuestNotificationTemplates:
     """Templates for guest lifecycle notifications."""
-    
+
     @staticmethod
     def get_expiry_warning_email(
         guest_name: str,
@@ -21,10 +37,10 @@ class GuestNotificationTemplates:
         days: int,
         expiry_date: str,
         guest_id: str,
-        locale: str = "en"
+        locale: str = "en",
     ) -> Dict[str, str]:
         """Get expiry warning email template.
-        
+
         Args:
             guest_name: Guest user display name
             guest_email: Guest user email
@@ -33,7 +49,7 @@ class GuestNotificationTemplates:
             expiry_date: Expiry date formatted string
             guest_id: Guest user ID for action links
             locale: Language locale (en/hu)
-            
+
         Returns:
             Dictionary with subject and body
         """
@@ -121,13 +137,9 @@ class GuestNotificationTemplates:
             </body>
             </html>
             """
-        
-        return {
-            "subject": subject,
-            "body": body,
-            "template_key": "GUEST_EXPIRY_WARNING"
-        }
-    
+
+        return {"subject": subject, "body": body, "template_key": "GUEST_EXPIRY_WARNING"}
+
     @staticmethod
     def get_revocation_notification(
         guest_name: str,
@@ -137,10 +149,10 @@ class GuestNotificationTemplates:
         admin_name: str,
         revocation_date: str,
         locale: str = "en",
-        recipient_type: str = "admin"  # admin or guest
+        recipient_type: str = "admin",  # admin or guest
     ) -> Dict[str, str]:
         """Get revocation notification template.
-        
+
         Args:
             guest_name: Guest user display name
             guest_email: Guest user email
@@ -150,13 +162,13 @@ class GuestNotificationTemplates:
             revocation_date: Revocation date formatted string
             locale: Language locale (en/hu)
             recipient_type: Type of recipient (admin/guest)
-            
+
         Returns:
             Dictionary with subject and body
         """
         if locale == "hu":
             subject = f"Vendég hozzáférés visszavonva - {guest_name}"
-            
+
             if recipient_type == "guest":
                 body = f"""
                 <html>
@@ -229,7 +241,7 @@ class GuestNotificationTemplates:
                 """
         else:  # English
             subject = f"Guest Access Revoked - {guest_name}"
-            
+
             if recipient_type == "guest":
                 body = f"""
                 <html>
@@ -300,13 +312,13 @@ class GuestNotificationTemplates:
                 </body>
                 </html>
                 """
-        
+
         return {
             "subject": subject,
             "body": body,
-            "template_key": f"GUEST_REVOKED_{recipient_type.upper()}"
+            "template_key": f"GUEST_REVOKED_{recipient_type.upper()}",
         }
-    
+
     @staticmethod
     def get_extension_confirmation(
         guest_name: str,
@@ -317,10 +329,10 @@ class GuestNotificationTemplates:
         admin_name: str,
         extension_count: int,
         locale: str = "en",
-        recipient_type: str = "admin"  # admin or guest
+        recipient_type: str = "admin",  # admin or guest
     ) -> Dict[str, str]:
         """Get extension confirmation template.
-        
+
         Args:
             guest_name: Guest user display name
             guest_email: Guest user email
@@ -331,13 +343,13 @@ class GuestNotificationTemplates:
             extension_count: Number of extensions used
             locale: Language locale (en/hu)
             recipient_type: Type of recipient (admin/guest)
-            
+
         Returns:
             Dictionary with subject and body
         """
         if locale == "hu":
             subject = f"Vendég hozzáférés meghosszabbítva - {guest_name}"
-            
+
             if recipient_type == "guest":
                 body = f"""
                 <html>
@@ -399,7 +411,7 @@ class GuestNotificationTemplates:
                 """
         else:  # English
             subject = f"Guest Access Extended - {guest_name}"
-            
+
             if recipient_type == "guest":
                 body = f"""
                 <html>
@@ -459,30 +471,30 @@ class GuestNotificationTemplates:
                 </body>
                 </html>
                 """
-        
+
         return {
             "subject": subject,
             "body": body,
-            "template_key": f"GUEST_EXTENDED_{recipient_type.upper()}"
+            "template_key": f"GUEST_EXTENDED_{recipient_type.upper()}",
         }
-    
+
     @staticmethod
     def get_guest_expired_notification(
         guest_name: str,
         guest_email: str,
         partner_company: str,
         expiry_date: str,
-        locale: str = "en"
+        locale: str = "en",
     ) -> Dict[str, str]:
         """Get guest expired notification template.
-        
+
         Args:
             guest_name: Guest user display name
             guest_email: Guest user email
             partner_company: Partner company name
             expiry_date: Expiry date formatted string
             locale: Language locale (en/hu)
-            
+
         Returns:
             Dictionary with subject and body
         """
@@ -546,9 +558,5 @@ class GuestNotificationTemplates:
             </body>
             </html>
             """
-        
-        return {
-            "subject": subject,
-            "body": body,
-            "template_key": "GUEST_EXPIRED"
-        }
+
+        return {"subject": subject, "body": body, "template_key": "GUEST_EXPIRED"}

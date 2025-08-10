@@ -1,4 +1,5 @@
 """API endpoints for notification management and monitoring."""
+
 import logging
 from datetime import datetime
 from typing import Any

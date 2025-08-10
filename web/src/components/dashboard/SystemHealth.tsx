@@ -77,7 +77,8 @@ export const SystemHealth = ({
       degraded: 'warning',
       unhealthy: 'danger',
     };
-    return <Badge appearance="filled" color={colors[health]}>{health.toUpperCase()}</Badge>;
+    const healthText = health === 'healthy' ? 'EGÉSZSÉGES' : health === 'degraded' ? 'ROMLOTT' : 'EGÉSZSÉGTELEN';
+    return <Badge appearance="filled" color={colors[health]}>{healthText}</Badge>;
   };
 
   const getQueueStatus = () => {
@@ -88,7 +89,7 @@ export const SystemHealth = ({
 
   return (
     <Card className={styles.card} role="region" aria-label="System health status">
-      <CardHeader header={<Text weight="semibold" as="h2">System Health</Text>} />
+      <CardHeader header={<Text weight="semibold" as="h2">Rendszerállapot</Text>} />
       <div className={styles.content}>
         <div className={styles.statusRow} role="status" aria-live="polite" aria-label={`System status: ${health}`}>
           <div className={styles.statusIcon} aria-hidden="true">{getHealthIcon()}</div>
@@ -97,8 +98,8 @@ export const SystemHealth = ({
 
         <div role="group" aria-labelledby="queue-depth-label">
           <div className={styles.metricRow}>
-            <Caption1 className={styles.metricLabel} id="queue-depth-label">Queue Depth</Caption1>
-            <Text weight="semibold" aria-label={`${queueDepth} jobs in queue`}>{queueDepth} jobs</Text>
+            <Caption1 className={styles.metricLabel} id="queue-depth-label">Várakozási Sor Mérete</Caption1>
+            <Text weight="semibold" aria-label={`${queueDepth} feladat a sorban`}>{queueDepth} feladat</Text>
           </div>
           <ProgressBar
             value={Math.min(queueDepth / 50, 1)}
@@ -110,8 +111,8 @@ export const SystemHealth = ({
 
         <div role="group" aria-labelledby="provision-time-label">
           <div className={styles.metricRow}>
-            <Caption1 className={styles.metricLabel} id="provision-time-label">Last Provision Time</Caption1>
-            <Text weight="semibold" aria-label={`${lastProvisionTime} minutes`}>{lastProvisionTime} min</Text>
+            <Caption1 className={styles.metricLabel} id="provision-time-label">Utolsó Telepítés Ideje</Caption1>
+            <Text weight="semibold" aria-label={`${lastProvisionTime} perc`}>{lastProvisionTime} perc</Text>
           </div>
           <ProgressBar
             value={Math.min(lastProvisionTime / 10, 1)}
@@ -123,7 +124,7 @@ export const SystemHealth = ({
 
         <div role="group" aria-labelledby="api-latency-label">
           <div className={styles.metricRow}>
-            <Caption1 className={styles.metricLabel} id="api-latency-label">API Latency</Caption1>
+            <Caption1 className={styles.metricLabel} id="api-latency-label">API Késleltetés</Caption1>
             <Text weight="semibold" aria-label={`${apiLatency} milliseconds`}>{apiLatency} ms</Text>
           </div>
           <ProgressBar

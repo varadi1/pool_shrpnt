@@ -5,6 +5,7 @@ import { AuthProvider } from '@/components/auth/AuthProvider';
 import { router } from '@/routes';
 import { lightTheme } from '@/config/theme.config';
 import { ErrorBoundary } from '@/components/common/ErrorBoundary';
+import { AuthDebugPanel } from '@/components/debug/AuthDebugPanel';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +25,7 @@ function App() {
         <FluentProvider theme={lightTheme}>
           <QueryClientProvider client={queryClient}>
             <RouterProvider router={router} />
+            {import.meta.env.DEV && <AuthDebugPanel />}
           </QueryClientProvider>
         </FluentProvider>
       </AuthProvider>

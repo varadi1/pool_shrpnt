@@ -14,10 +14,10 @@ import {
   MessageBarBody,
   Spinner,
   Label,
-  DatePicker,
   Badge,
   Text,
 } from '@fluentui/react-components';
+import { DatePicker } from '@fluentui/react-datepicker-compat';
 import { Calendar20Regular, CheckmarkCircle20Regular } from '@fluentui/react-icons';
 import { api } from '@/services/api';
 
@@ -128,17 +128,17 @@ export const GuestExtensionForm = ({
 
   const handleExtend = async () => {
     if (!justification.trim()) {
-      setError('Please provide a justification for the extension');
+      setError('Kérjük, adja meg a meghosszabbítás indoklását');
       return;
     }
 
     if (justification.length > 1000) {
-      setError('Justification must be 1000 characters or less');
+      setError('Az indoklás legfeljebb 1000 karakter lehet');
       return;
     }
 
     if (!newExpiryDate) {
-      setError('Please select a new expiry date');
+      setError('Kérjük, válasszon egy új lejárati dátumot');
       return;
     }
 
@@ -155,9 +155,9 @@ export const GuestExtensionForm = ({
       handleClose();
     } catch (err: any) {
       if (err.response?.data?.detail?.includes('maximum extensions')) {
-        setError('This guest has reached the maximum number of extensions allowed');
+        setError('Ez a vendég elérte az engedélyezett meghosszabbítások maximális számát');
       } else {
-        setError(err.response?.data?.detail || 'Failed to extend guest access');
+        setError(err.response?.data?.detail || 'Nem sikerült meghosszabbítani a vendég hozzáférést');
       }
     } finally {
       setLoading(false);
@@ -190,23 +190,23 @@ export const GuestExtensionForm = ({
         <DialogBody>
           <DialogTitle>
             <Calendar20Regular style={{ marginRight: '8px' }} />
-            Extend Guest Access
+            Vendég Hozzáférés Meghosszabbítása
           </DialogTitle>
           <DialogContent id="extension-dialog-content" className={styles.content}>
             <div className={styles.currentInfo}>
-              <Text weight="semibold">Current Guest Information</Text>
+              <Text weight="semibold">Jelenlegi Vendég Információk</Text>
               <div className={styles.infoRow}>
-                <Text>Guest:</Text>
+                <Text>Vendég:</Text>
                 <Text weight="semibold">{guest.display_name} ({guest.email})</Text>
               </div>
               <div className={styles.infoRow}>
-                <Text>Current Expiry:</Text>
+                <Text>Jelenlegi Lejárat:</Text>
                 <Text weight="semibold">
-                  {currentExpiry ? currentExpiry.toLocaleDateString() : 'Not set'}
+                  {currentExpiry ? currentExpiry.toLocaleDateString() : 'Nincs beállítva'}
                 </Text>
               </div>
               <div className={styles.infoRow}>
-                <Text>Extension Count:</Text>
+                <Text>Meghosszabbítások Száma:</Text>
                 <Badge
                   appearance="filled"
                   color={guest.extended_count === 0 ? 'success' : guest.extended_count >= 2 ? 'warning' : 'informative'}
@@ -216,7 +216,7 @@ export const GuestExtensionForm = ({
               </div>
               {guest.last_extended_at && (
                 <div className={styles.infoRow}>
-                  <Text>Last Extended:</Text>
+                  <Text>Utoljára Meghosszabbítva:</Text>
                   <Text>{new Date(guest.last_extended_at).toLocaleDateString()}</Text>
                 </div>
               )}
@@ -230,11 +230,11 @@ export const GuestExtensionForm = ({
 
             <div className={styles.datePickerContainer}>
               <Label htmlFor="new-expiry-date" required>
-                New Expiry Date
+                Új Lejárati Dátum
               </Label>
               <DatePicker
                 id="new-expiry-date"
-                placeholder="Select new expiry date"
+                placeholder="Válasszon új lejárati dátumot"
                 value={newExpiryDate}
                 onSelectDate={setNewExpiryDate}
                 minDate={minDate}
@@ -249,12 +249,12 @@ export const GuestExtensionForm = ({
 
             <div>
               <Label htmlFor="extension-justification" required>
-                Justification for Extension
+                Meghosszabbítás Indoklása
               </Label>
               <Textarea
                 id="extension-justification"
                 className={styles.justificationField}
-                placeholder="Please provide a justification for extending access (required, max 1000 characters)"
+                placeholder="Kérjük, adja meg a hozzáférés meghosszabbításának indoklását (kötelező, maximum 1000 karakter)"
                 value={justification}
                 onChange={(e, data) => setJustification(data.value)}
                 disabled={loading}
@@ -268,15 +268,15 @@ export const GuestExtensionForm = ({
 
             {extensions.length > 0 && (
               <div>
-                <Text weight="semibold">Extension History</Text>
+                <Text weight="semibold">Meghosszabbítási Előzmények</Text>
                 <div className={styles.extensionHistory}>
                   {loadingHistory ? (
-                    <Spinner size="tiny" label="Loading history..." />
+                    <Spinner size="tiny" label="Előzmények betöltése..." />
                   ) : (
                     extensions.slice(0, 3).map((ext) => (
                       <div key={ext.id} className={styles.historyItem}>
                         <Text size="200">
-                          Extended to {new Date(ext.new_expiry_date).toLocaleDateString()} by {ext.extended_by}
+                          Meghosszabbítva: {new Date(ext.new_expiry_date).toLocaleDateString()} - {ext.extended_by}
                         </Text>
                         <br />
                         <Text size="100" style={{ color: tokens.colorNeutralForeground3 }}>
@@ -291,7 +291,7 @@ export const GuestExtensionForm = ({
           </DialogContent>
           <DialogActions>
             <Button appearance="secondary" onClick={handleClose} disabled={loading}>
-              Cancel
+              Mégse
             </Button>
             <Button
               appearance="primary"
@@ -299,7 +299,7 @@ export const GuestExtensionForm = ({
               disabled={loading || !justification.trim() || !newExpiryDate}
               icon={loading ? <Spinner size="tiny" /> : <CheckmarkCircle20Regular />}
             >
-              {loading ? 'Extending...' : 'Extend Access'}
+              {loading ? 'Meghosszabbítás...' : 'Hozzáférés Meghosszabbítása'}
             </Button>
           </DialogActions>
         </DialogBody>

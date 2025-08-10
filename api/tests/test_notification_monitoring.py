@@ -1,4 +1,5 @@
 """Tests for notification monitoring and delivery tracking."""
+
 from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
 from uuid import uuid4

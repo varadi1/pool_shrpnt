@@ -91,7 +91,14 @@ class TestExtensionEndpoints:
     @patch("api.routers.guests.get_current_user")
     @patch("api.routers.guests.get_db")
     def test_extend_guest_success(
-        self, mock_get_db, mock_get_current_user, client, sample_guest, sample_policy, sample_extension, mock_current_user
+        self,
+        mock_get_db,
+        mock_get_current_user,
+        client,
+        sample_guest,
+        sample_policy,
+        sample_extension,
+        mock_current_user,
     ):
         """Test successful guest extension."""
         # Setup
@@ -129,7 +136,9 @@ class TestExtensionEndpoints:
 
     @patch("api.routers.guests.get_current_user")
     @patch("api.routers.guests.get_db")
-    def test_extend_guest_not_found(self, mock_get_db, mock_get_current_user, client, mock_current_user):
+    def test_extend_guest_not_found(
+        self, mock_get_db, mock_get_current_user, client, mock_current_user
+    ):
         """Test extension of non-existent guest."""
         # Setup
         mock_get_current_user.return_value = mock_current_user
@@ -358,7 +367,10 @@ class TestExtensionEndpoints:
         )
 
         # Should fail due to missing auth or validation
-        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_422_UNPROCESSABLE_ENTITY]
+        assert response.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+        ]
 
     def test_extension_request_with_invalid_days(self, client):
         """Test that extension days must be within valid range."""
@@ -372,7 +384,10 @@ class TestExtensionEndpoints:
         )
 
         # Should fail due to missing auth or validation
-        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_422_UNPROCESSABLE_ENTITY]
+        assert response.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+        ]
 
     @patch("api.routers.guests.get_current_user")
     @patch("api.routers.guests.get_db")

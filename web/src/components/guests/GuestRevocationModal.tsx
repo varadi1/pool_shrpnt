@@ -77,12 +77,12 @@ export const GuestRevocationModal = ({
 
   const handleRevoke = async () => {
     if (!reason.trim()) {
-      setError('Please provide a reason for revocation');
+      setError('Kérjük, adja meg a visszavonás okát');
       return;
     }
 
     if (reason.length > 500) {
-      setError('Reason must be 500 characters or less');
+      setError('Az ok legfeljebb 500 karakter lehet');
       return;
     }
 
@@ -107,7 +107,7 @@ export const GuestRevocationModal = ({
       onRevocationComplete();
       handleClose();
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to revoke guest access');
+      setError(err.response?.data?.detail || 'Nem sikerült visszavonni a vendég hozzáférést');
     } finally {
       setLoading(false);
     }
@@ -131,26 +131,26 @@ export const GuestRevocationModal = ({
         <DialogBody>
           <DialogTitle>
             <DismissCircle20Regular style={{ marginRight: '8px' }} />
-            Revoke Guest Access
+            Vendég Hozzáférés Visszavonása
           </DialogTitle>
           <DialogContent id="revocation-dialog-content" className={styles.content}>
             <div className={styles.warningSection}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Warning20Regular />
-                <strong>Warning: This action has immediate effect</strong>
+                <strong>Figyelmeztetés: Ez a művelet azonnali hatású</strong>
               </div>
               <p className={styles.warningText}>
-                Revoking guest access will immediately:
+                A vendég hozzáférés visszavonása azonnal:
               </p>
               <ul className={styles.warningText}>
-                <li>Remove the guest from all Azure AD groups</li>
-                <li>Revoke all SharePoint and Teams permissions</li>
-                <li>Prevent the guest from accessing any resources</li>
+                <li>Eltávolítja a vendéget minden Azure AD csoportból</li>
+                <li>Visszavonja az összes SharePoint és Teams engedélyt</li>
+                <li>Megakadályozza a vendéget bármely erőforrás elérésében</li>
               </ul>
               {isMultiple && (
                 <div>
                   <p className={styles.warningText}>
-                    You are about to revoke access for {guestList.length} guests:
+                    {guestList.length} vendég hozzáférését készül visszavonni:
                   </p>
                   <ul className={styles.guestList}>
                     {guestList.slice(0, 5).map(guest => (
@@ -159,14 +159,14 @@ export const GuestRevocationModal = ({
                       </li>
                     ))}
                     {guestList.length > 5 && (
-                      <li>... and {guestList.length - 5} more</li>
+                      <li>... és még {guestList.length - 5} további</li>
                     )}
                   </ul>
                 </div>
               )}
               {!isMultiple && guests && (
                 <p className={styles.warningText}>
-                  Guest: <strong>{guests.display_name}</strong> ({guests.email})
+                  Vendég: <strong>{guests.display_name}</strong> ({guests.email})
                 </p>
               )}
             </div>
@@ -179,12 +179,12 @@ export const GuestRevocationModal = ({
 
             <div>
               <Label htmlFor="revocation-reason" required>
-                Reason for revocation
+                Visszavonás oka
               </Label>
               <Textarea
                 id="revocation-reason"
                 className={styles.reasonField}
-                placeholder="Please provide a reason for revoking access (required, max 500 characters)"
+                placeholder="Kérjük, adja meg a hozzáférés visszavonásának okát (kötelező, maximum 500 karakter)"
                 value={reason}
                 onChange={(e, data) => setReason(data.value)}
                 disabled={loading}
@@ -198,7 +198,7 @@ export const GuestRevocationModal = ({
           </DialogContent>
           <DialogActions>
             <Button appearance="secondary" onClick={handleClose} disabled={loading}>
-              Cancel
+              Mégse
             </Button>
             <Button
               appearance="primary"
@@ -206,7 +206,7 @@ export const GuestRevocationModal = ({
               disabled={loading || !reason.trim()}
               icon={loading ? <Spinner size="tiny" /> : <DismissCircle20Regular />}
             >
-              {loading ? 'Revoking...' : `Revoke Access${isMultiple ? ` (${guestList.length})` : ''}`}
+              {loading ? 'Visszavonás...' : `Hozzáférés Visszavonása${isMultiple ? ` (${guestList.length})` : ''}`}
             </Button>
           </DialogActions>
         </DialogBody>

@@ -1,6 +1,6 @@
 import { useMsal } from '@azure/msal-react';
 import { InteractionStatus } from '@azure/msal-browser';
-import { loginRequest, apiScopes } from '@/config/auth.config';
+import { loginRequest, apiScopes, isE2EMode } from '@/config/auth.config';
 import { useMemo } from 'react';
 
 export type UserRole = 'NEU_Admin' | 'NEU_PM' | 'NEU_Partner' | 'NEU_Guest';
@@ -12,12 +12,19 @@ export const useAuth = () => {
   
   // Extract user roles from ID token claims
   const userRoles = useMemo(() => {
-    // TEMPORARY: Return admin role for development until Azure AD roles are configured
-    // TODO: Remove this after configuring App Roles in Azure AD
-    console.warn('Using hardcoded NEU_Admin role for development. Configure Azure AD App Roles to fix this.');
-    return ['NEU_Admin'] as UserRole[];
+    // First check if we're in mock mode with stored roles
+    if (isE2EMode()) {
+      const storedRoles = sessionStorage.getItem('userRoles');
+      if (storedRoles) {
+        const roles = JSON.parse(storedRoles) as UserRole[];
+        console.log('Using mock roles:', roles);
+        return roles;
+      }
+      // Default to NEU_Admin in mock mode
+      console.log('Mock mode detected, defaulting to NEU_Admin role');
+      return ['NEU_Admin'] as UserRole[];
+    }
     
-    /* ORIGINAL CODE - Uncomment after Azure AD configuration:
     if (!user?.idTokenClaims) return [];
     
     const claims = user.idTokenClaims as any;
@@ -36,12 +43,20 @@ export const useAuth = () => {
       sessionStorage.setItem('userRoles', JSON.stringify(roles));
     }
     
+    // Development fallback - log warning if no roles configured
+    if (roles.length === 0 && import.meta.env.DEV) {
+      console.warn('No Azure AD App Roles found in token. Ensure App Roles are configured in Azure AD.');
+    }
+    
     return roles as UserRole[];
-    */
   }, [user]);
 
   const login = async () => {
     try {
+      if (isE2EMode()) {
+        // Do nothing in E2E mode; AuthProvider already set a mock account
+        return;
+      }
       await instance.loginRedirect(loginRequest);
     } catch (error) {
       console.error('Login failed:', error);
@@ -63,6 +78,9 @@ export const useAuth = () => {
     }
 
     try {
+      if (isE2EMode()) {
+        return 'mock-access-token';
+      }
       // Try silent token acquisition first
       const response = await instance.acquireTokenSilent({
         scopes,
@@ -74,6 +92,9 @@ export const useAuth = () => {
       console.warn('Silent token acquisition failed, attempting interactive', error);
       
       // Fall back to interactive token acquisition
+      if (isE2EMode()) {
+        return 'mock-access-token';
+      }
       const response = await instance.acquireTokenRedirect({
         scopes,
         account: accounts[0],
@@ -91,11 +112,24 @@ export const useAuth = () => {
     return roles.some(role => userRoles.includes(role));
   };
   
-  const isAdmin = (): boolean => hasRole('NEU_Admin');
-  const isPM = (): boolean => hasRole('NEU_PM');
+  const isAdmin = (): boolean => {
+    // In mock mode, check for NEU_Admin role
+    if (isE2EMode()) {
+      return userRoles.includes('NEU_Admin');
+    }
+    return hasRole('NEU_Admin');
+  };
+  
+  const isPM = (): boolean => {
+    // In mock mode, check for NEU_PM role
+    if (isE2EMode()) {
+      return userRoles.includes('NEU_PM');
+    }
+    return hasRole('NEU_PM');
+  };
 
   return {
-    isAuthenticated: accounts.length > 0,
+    isAuthenticated: accounts.length > 0 || isE2EMode(),
     isLoading: inProgress === InteractionStatus.Login,
     user,
     userRoles,

@@ -1,4 +1,5 @@
 """Tests for notification system - Task 1."""
+
 import hashlib
 from datetime import UTC, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch

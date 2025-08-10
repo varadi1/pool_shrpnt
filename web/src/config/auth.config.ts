@@ -23,12 +23,30 @@ export const msalConfig: Configuration = {
 };
 
 export const loginRequest = {
-  scopes: ['User.Read', 'openid', 'profile'],
+  scopes: ['api://pooldrv/access', 'User.Read'],
   prompt: 'select_account' as const,
 };
 
-export const apiScopes = ['User.Read'];
+export const apiScopes = ['api://pooldrv/access'];
 
 export const graphScopes = ['User.Read'];
 
 export const msalInstance = new PublicClientApplication(msalConfig);
+
+export const isE2EMode = (): boolean => {
+  // 1) Explicit env flag set via Vite for mock auth
+  if (import.meta.env.VITE_USE_MOCK_AUTH === 'true') return true;
+  // 2) Explicit env flag set via Vite for E2E testing
+  if (import.meta.env.VITE_E2E === 'true') return true;
+  // 3) Playwright/init script flag
+  if (typeof window !== 'undefined') {
+    try {
+      if ((window as any).__MSAL_MOCK__) return true;
+      // 4) Test hint: presence of a mocked account in sessionStorage
+      if (window.sessionStorage && window.sessionStorage.getItem('mock-account')) return true;
+    } catch {
+      // ignore storage access errors
+    }
+  }
+  return false;
+};

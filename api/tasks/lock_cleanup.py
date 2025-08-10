@@ -33,7 +33,10 @@ class ExpiredLockCleanupTask:
     async def initialize(self):
         """Initialize the task with database session if not provided."""
         if not self.db:
-            engine = create_async_engine(settings.DATABASE_URL)
+            # Always use asyncpg driver for PostgreSQL
+            engine = create_async_engine(
+                settings.database_url.replace("postgresql://", "postgresql+asyncpg://")
+            )
             async with engine.begin() as conn:
                 self.db = AsyncSession(conn)
 

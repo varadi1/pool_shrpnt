@@ -1,4 +1,5 @@
 """Core notification service for managing notifications."""
+
 import hashlib
 import logging
 import re
@@ -414,9 +415,9 @@ class NotificationService:
     ) -> None:
         """Log delivery status."""
         log_entry = NotificationLog(
-            notification_type=notification.template.template_key
-            if notification.template
-            else "unknown",
+            notification_type=(
+                notification.template.template_key if notification.template else "unknown"
+            ),
             recipient_email=notification.recipient_email,
             recipient_teams_id=notification.recipient_teams_id,
             channel=notification.channel,

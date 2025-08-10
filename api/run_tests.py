@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Test runner that handles database setup automatically.
-Tries to use Docker PostgreSQL if available, falls back to SQLite.
+STRICT: PostgreSQL ONLY. SQLite fallback is removed.
 """
 import os
 import subprocess
@@ -63,6 +63,10 @@ def start_postgres_container():
 
     if result.returncode != 0:
         print(f"Failed to start PostgreSQL container: {result.stderr}")
+        # If port is already allocated, assume local PostgreSQL is running
+        if "port is already allocated" in (result.stderr or ""):
+            print("Port 5432 is already in use. Assuming PostgreSQL is running locally.")
+            return True
         return False
 
     # Wait for PostgreSQL to be ready
@@ -83,60 +87,62 @@ def start_postgres_container():
     return False
 
 
-def run_tests_with_postgres():
+def run_tests_with_postgres(test_args: list[str] | None = None):
     """Run tests with PostgreSQL database."""
     print("Running tests with PostgreSQL...")
 
     # Set environment variables for PostgreSQL
     env = os.environ.copy()
     env["TEST_DATABASE_URL"] = "postgresql://pooldrv:pooldrv@localhost:5432/pooldb_test"
-    env[
-        "ASYNC_TEST_DATABASE_URL"
-    ] = "postgresql+asyncpg://pooldrv:pooldrv@localhost:5432/pooldb_test"
+    env["ASYNC_TEST_DATABASE_URL"] = (
+        "postgresql+asyncpg://pooldrv:pooldrv@localhost:5432/pooldb_test"
+    )
 
     # Run tests
-    result = subprocess.run([sys.executable, "-m", "pytest", "-v", "api/tests/"], env=env)
+    cmd = [sys.executable, "-m", "pytest", "-v"]
+    if test_args:
+        cmd.extend(test_args)
+    else:
+        cmd.append("api/tests/")
+    result = subprocess.run(cmd, env=env)
 
     return result.returncode
 
 
-def run_tests_with_sqlite():
-    """Run tests with SQLite database."""
-    print("Running tests with SQLite (Docker not available)...")
-    print("Note: Some integration tests may be skipped in SQLite mode.")
+def ensure_postgres():
+    """Ensure PostgreSQL is available. If Docker is present, start container; else assume local PG.
 
-    # Copy SQLite conftest over the regular one temporarily
-    import shutil
-
-    conftest_path = Path("api/tests/conftest.py")
-    conftest_backup = Path("api/tests/conftest.py.bak")
-    conftest_sqlite = Path("api/tests/conftest_sqlite.py")
-
-    # Backup original conftest
-    shutil.copy2(conftest_path, conftest_backup)
-
-    try:
-        # Use SQLite conftest
-        shutil.copy2(conftest_sqlite, conftest_path)
-
-        # Run tests
-        result = subprocess.run(
-            [
-                sys.executable,
-                "-m",
-                "pytest",
-                "-v",
-                "api/tests/",
-                "-m",
-                "not requires_postgres",
-            ]  # Skip tests that require PostgreSQL
-        )
-
-        return result.returncode
-    finally:
-        # Restore original conftest
-        shutil.copy2(conftest_backup, conftest_path)
-        conftest_backup.unlink()
+    Returns True if postgres is assumed ready or started successfully.
+    """
+    if check_docker_available():
+        print("Docker is available.")
+        if not check_postgres_running():
+            return start_postgres_container()
+        print("PostgreSQL test container is already running.")
+        return True
+    else:
+        print("Docker is not available. Assuming local PostgreSQL is available on 5432...")
+        # Best-effort: try connecting via psql if available
+        try:
+            result = subprocess.run(
+                [
+                    "pg_isready",
+                    "-h",
+                    "localhost",
+                    "-p",
+                    "5432",
+                    "-U",
+                    "pooldrv",
+                ],
+                capture_output=True,
+            )
+            if result.returncode == 0:
+                print("Local PostgreSQL is ready.")
+                return True
+        except FileNotFoundError:
+            pass
+        # If pg_isready is not available, proceed; tests will fail fast if PG is missing
+        return True
 
 
 def main():
@@ -148,20 +154,11 @@ def main():
     # Check if specific test files were requested
     test_args = sys.argv[1:] if len(sys.argv) > 1 else []
 
-    if check_docker_available():
-        print("Docker is available.")
+    if not ensure_postgres():
+        print("Failed to ensure PostgreSQL is available.")
+        return 1
 
-        if not check_postgres_running():
-            if not start_postgres_container():
-                print("Failed to start PostgreSQL, falling back to SQLite...")
-                return run_tests_with_sqlite()
-        else:
-            print("PostgreSQL test container is already running.")
-
-        return run_tests_with_postgres()
-    else:
-        print("Docker is not available.")
-        return run_tests_with_sqlite()
+    return run_tests_with_postgres(test_args)
 
 
 if __name__ == "__main__":

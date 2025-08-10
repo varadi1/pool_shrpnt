@@ -13,10 +13,10 @@ describe('SystemHealth', () => {
       />
     );
 
-    expect(screen.getByText('System Health')).toBeInTheDocument();
-    expect(screen.getByText('HEALTHY')).toBeInTheDocument();
-    expect(screen.getByText('5 jobs')).toBeInTheDocument();
-    expect(screen.getByText('3 min')).toBeInTheDocument();
+    expect(screen.getByText('Rendszerállapot')).toBeInTheDocument();
+    expect(screen.getByText('EGÉSZSÉGES')).toBeInTheDocument();
+    expect(screen.getByText('5 feladat')).toBeInTheDocument();
+    expect(screen.getByText('3 perc')).toBeInTheDocument();
     expect(screen.getByText('150 ms')).toBeInTheDocument();
   });
 
@@ -30,7 +30,7 @@ describe('SystemHealth', () => {
       />
     );
 
-    expect(screen.getByText('DEGRADED')).toBeInTheDocument();
+    expect(screen.getByText('ROMLOTT')).toBeInTheDocument();
   });
 
   it('renders with unhealthy status', () => {
@@ -43,24 +43,24 @@ describe('SystemHealth', () => {
       />
     );
 
-    expect(screen.getByText('UNHEALTHY')).toBeInTheDocument();
+    expect(screen.getByText('EGÉSZSÉGTELEN')).toBeInTheDocument();
   });
 
   it('renders with default values when props are undefined', () => {
     render(<SystemHealth />);
 
-    expect(screen.getByText('HEALTHY')).toBeInTheDocument();
-    expect(screen.getByText('0 jobs')).toBeInTheDocument();
-    expect(screen.getByText('0 min')).toBeInTheDocument();
+    expect(screen.getByText('EGÉSZSÉGES')).toBeInTheDocument();
+    expect(screen.getByText('0 feladat')).toBeInTheDocument();
+    expect(screen.getByText('0 perc')).toBeInTheDocument();
     expect(screen.getByText('0 ms')).toBeInTheDocument();
   });
 
   it('displays correct labels for metrics', () => {
     render(<SystemHealth />);
 
-    expect(screen.getByText('Queue Depth')).toBeInTheDocument();
-    expect(screen.getByText('Last Provision Time')).toBeInTheDocument();
-    expect(screen.getByText('API Latency')).toBeInTheDocument();
+    expect(screen.getByText('Várakozási Sor Mérete')).toBeInTheDocument();
+    expect(screen.getByText('Utolsó Telepítés Ideje')).toBeInTheDocument();
+    expect(screen.getByText('API Késleltetés')).toBeInTheDocument();
   });
 
   it('renders progress bars for each metric', () => {
@@ -86,8 +86,8 @@ describe('SystemHealth', () => {
       />
     );
 
-    expect(screen.getByText('100 jobs')).toBeInTheDocument();
-    expect(screen.getByText('20 min')).toBeInTheDocument();
+    expect(screen.getByText('100 feladat')).toBeInTheDocument();
+    expect(screen.getByText('20 perc')).toBeInTheDocument();
     expect(screen.getByText('2000 ms')).toBeInTheDocument();
   });
 
@@ -96,37 +96,37 @@ describe('SystemHealth', () => {
 
     // The component should still render with default values when loading
     // as the loading prop is not used in the current implementation
-    expect(screen.getByText('System Health')).toBeInTheDocument();
+    expect(screen.getByText('Rendszerállapot')).toBeInTheDocument();
   });
 
   it('calculates queue status correctly', () => {
     const { rerender } = render(<SystemHealth queueDepth={0} />);
     
     // Queue depth 0 should be success (green)
-    expect(screen.getByText('0 jobs')).toBeInTheDocument();
+    expect(screen.getByText('0 feladat')).toBeInTheDocument();
 
     // Queue depth < 10 should be warning (yellow)
     rerender(<SystemHealth queueDepth={9} />);
-    expect(screen.getByText('9 jobs')).toBeInTheDocument();
+    expect(screen.getByText('9 feladat')).toBeInTheDocument();
 
     // Queue depth >= 10 should be error (red)
     rerender(<SystemHealth queueDepth={10} />);
-    expect(screen.getByText('10 jobs')).toBeInTheDocument();
+    expect(screen.getByText('10 feladat')).toBeInTheDocument();
   });
 
   it('displays provision time status correctly', () => {
     const { rerender } = render(<SystemHealth lastProvisionTime={3} />);
     
     // < 5 minutes should be success
-    expect(screen.getByText('3 min')).toBeInTheDocument();
+    expect(screen.getByText('3 perc')).toBeInTheDocument();
 
     // 5-10 minutes should be warning
     rerender(<SystemHealth lastProvisionTime={7} />);
-    expect(screen.getByText('7 min')).toBeInTheDocument();
+    expect(screen.getByText('7 perc')).toBeInTheDocument();
 
     // > 10 minutes should be error
     rerender(<SystemHealth lastProvisionTime={12} />);
-    expect(screen.getByText('12 min')).toBeInTheDocument();
+    expect(screen.getByText('12 perc')).toBeInTheDocument();
   });
 
   it('displays API latency status correctly', () => {

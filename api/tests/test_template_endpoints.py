@@ -66,7 +66,7 @@ def create_published_template(test_db: Session):
     )
     test_db.add(version)
     test_db.commit()
-    
+
     # Update template with version reference
     template.parent_version_id = version.id
     test_db.commit()

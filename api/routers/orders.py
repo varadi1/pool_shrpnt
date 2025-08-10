@@ -21,24 +21,6 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/orders", tags=["orders"])
 
 
-@router.get("")
-async def list_orders(
-    status: str = Query(None, description="Filter by status"),
-    since: str = Query(None, description="Filter by time period"),
-    session: AsyncSession = Depends(get_session),
-):
-    """List orders with optional filters - stub implementation"""
-    # Return mock data for dashboard
-    if status == "active":
-        return {"count": 0, "items": []}
-    elif status == "pending_provision":
-        return {"count": 0, "items": []}
-    elif status == "failed" and since == "24h":
-        return {"count": 0, "items": []}
-    else:
-        return {"count": 0, "items": []}
-
-
 def get_user_id(request: Request) -> str:
     """Extract user ID from request (placeholder for actual auth)"""
     # TODO: Get from JWT token after auth implementation
@@ -111,8 +93,9 @@ async def list_orders(
     page_size: int = Query(50, ge=1, le=100),
     contract_id: int | None = None,
     partner_company_id: int | None = None,
-    provisioning_status: str
-    | None = Query(None, pattern="^(pending|in_progress|completed|failed)$"),
+    provisioning_status: str | None = Query(
+        None, pattern="^(pending|in_progress|completed|failed)$"
+    ),
     session: AsyncSession = Depends(get_session),
 ):
     """List orders with pagination and filters"""

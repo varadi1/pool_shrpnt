@@ -1,4 +1,5 @@
 from datetime import datetime
+from enum import Enum
 from typing import Any
 
 from sqlalchemy.orm import Session
@@ -7,6 +8,27 @@ from api.core.logging import get_logger
 from api.models.audit import AuditLog
 
 logger = get_logger(__name__)
+
+
+class AuditEventType(Enum):
+    """Audit event types for guest management."""
+
+    # Guest lifecycle events
+    GUEST_INVITED = "guest.invited"
+    GUEST_EXTENDED = "guest.extended"
+    GUEST_REVOKED = "guest.revoked"
+    GUEST_EXPIRED = "guest.expired"
+    GUEST_PURGED = "guest.purged"
+    GUEST_REACTIVATED = "guest.reactivated"
+    GUEST_GROUPS_UPDATED = "guest.groups_updated"
+
+    # Notification events
+    NOTIFICATION_SENT = "notification.sent"
+    NOTIFICATION_FAILED = "notification.failed"
+
+    # Access events
+    GUEST_ACCESS_GRANTED = "guest.access_granted"
+    GUEST_ACCESS_REVOKED = "guest.access_revoked"
 
 
 class AuditService:

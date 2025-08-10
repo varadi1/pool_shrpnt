@@ -1,0 +1,27 @@
+# Environment files (do not commit secrets)
+.env
+.env.*
+
+# Secrets folder
+secrets/**
+
+# OS / IDE
+.DS_Store
+.python-version
+.kilocodemodes
+.coverage
+
+# Python
+__pycache__/
+*.pyc
+
+# Node/JS
+node_modules/
+web/dist/
+web/coverage/
+web/test-results/
+
+# Build artifacts
+dist/
+htmlcov/
+

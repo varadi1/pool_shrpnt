@@ -11,19 +11,6 @@ logger = get_logger(__name__)
 router = APIRouter(prefix="/contracts", tags=["contracts"])
 
 
-@router.get("")
-async def list_contracts(
-    status: str = Query(None, description="Filter by status"),
-    session: AsyncSession = Depends(get_session),
-):
-    """List contracts with optional filters - stub implementation"""
-    # Return mock data for dashboard
-    if status == "active":
-        return {"count": 0, "items": []}
-    else:
-        return {"count": 0, "items": []}
-
-
 def get_user_id(request: Request) -> str:
     """Extract user ID from request (placeholder for actual auth)"""
     # TODO: Get from JWT token after auth implementation

@@ -1,7 +1,7 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from 'axios';
 import axiosRetry from 'axios-retry';
-import { msalInstance, apiScopes } from '@/config/auth.config';
+import { msalInstance, apiScopes, isE2EMode } from '@/config/auth.config';
 import { config } from '@/config/env.config';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -25,6 +25,11 @@ const axiosClient: AxiosInstance = axios.create({
 let tokenRenewalTimer: NodeJS.Timeout | undefined;
 
 async function getAccessToken(): Promise<string> {
+  // In mock mode, return a mock token
+  if (isE2EMode()) {
+    return 'mock-access-token';
+  }
+  
   const accounts = msalInstance.getAllAccounts();
   if (accounts.length === 0) {
     throw new Error('No authenticated user');

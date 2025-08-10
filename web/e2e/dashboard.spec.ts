@@ -2,14 +2,13 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Dashboard User Flows', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock authentication
+    // Enable auth mock mode
     await page.addInitScript(() => {
+      (window as any).__MSAL_MOCK__ = true;
       window.sessionStorage.setItem('mock-account', JSON.stringify({
         username: 'admin@example.com',
         name: 'Admin User',
-        idTokenClaims: {
-          roles: ['NEU_Admin']
-        }
+        idTokenClaims: { roles: ['NEU_Admin'] }
       }));
     });
 

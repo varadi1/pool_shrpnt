@@ -203,35 +203,35 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
       case 'PENDING':
         return (
           <Badge appearance="tint" color="warning" className={styles.statusBadge}>
-            Pending
+            Függőben
           </Badge>
         );
       case 'INVITED':
         return (
           <Badge appearance="tint" color="informative" className={styles.statusBadge}>
-            Invited
+            Meghívva
           </Badge>
         );
       case 'ACCEPTED':
         return (
           <Badge appearance="tint" color="success" icon={<CheckmarkCircle20Filled />} className={styles.statusBadge}>
-            Accepted
+            Elfogadva
           </Badge>
         );
       case 'EXPIRED':
         return (
           <Badge appearance="tint" color="subtle" className={styles.statusBadge}>
-            Expired
+            Lejárt
           </Badge>
         );
       case 'REVOKED':
         return (
           <Badge appearance="tint" color="danger" className={styles.statusBadge}>
-            Revoked
+            Visszavonva
           </Badge>
         );
       default:
-        return <Badge appearance="tint">Unknown</Badge>;
+        return <Badge appearance="tint">Ismeretlen</Badge>;
     }
   };
 
@@ -251,11 +251,11 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
   const formatActivityTitle = (eventType: string, metadata?: Record<string, unknown>) => {
     switch (eventType) {
       case 'GUEST_INVITED':
-        return `Invitation sent by ${metadata?.inviter || 'System'}`;
+        return `Meghívó elküldve: ${metadata?.inviter || 'Rendszer'}`;
       case 'GUEST_ACCEPTED':
-        return 'Invitation accepted';
+        return 'Meghívó elfogadva';
       case 'GUEST_ASSIGNED':
-        return `Assigned to group: ${metadata?.group_name || 'Unknown'}`;
+        return `Csoporthoz rendelve: ${metadata?.group_name || 'Ismeretlen'}`;
       default:
         return eventType.replace(/_/g, ' ').toLowerCase();
     }
@@ -265,7 +265,7 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
     <Dialog open={open} onOpenChange={(e, data) => !data.open && onClose()}>
       <DialogSurface>
         <DialogBody>
-          <DialogTitle>Guest User Details</DialogTitle>
+          <DialogTitle>Vendég Felhasználó Részletei</DialogTitle>
           <DialogContent className={styles.dialogContent}>
             {error && (
               <MessageBar intent="error" className={styles.error}>
@@ -275,44 +275,44 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
 
             {loading ? (
               <div className={styles.loading}>
-                <Spinner size="medium" label="Loading guest details..." />
+                <Spinner size="medium" label="Vendég adatok betöltése..." />
               </div>
             ) : guest ? (
               <>
                 <div className={styles.section}>
                   <div className={styles.sectionHeader}>
                     <Person20Regular />
-                    <Title3>Basic Information</Title3>
+                    <Title3>Alapinformációk</Title3>
                   </div>
                   
                   <div className={styles.infoRow}>
-                    <Text className={styles.infoLabel}>Name:</Text>
+                    <Text className={styles.infoLabel}>Név:</Text>
                     <Body1 className={styles.infoValue}>{guest.display_name}</Body1>
                   </div>
                   
                   <div className={styles.infoRow}>
-                    <Text className={styles.infoLabel}>Email:</Text>
+                    <Text className={styles.infoLabel}>Email Cím:</Text>
                     <Body1 className={styles.infoValue}>
                       <Mail20Regular /> {guest.email}
                     </Body1>
                   </div>
                   
                   <div className={styles.infoRow}>
-                    <Text className={styles.infoLabel}>Partner Company:</Text>
+                    <Text className={styles.infoLabel}>Partner Cég:</Text>
                     <Body1 className={styles.infoValue}>
                       <Building20Regular /> {guest.partner_company_name || guest.partner_company_id}
                     </Body1>
                   </div>
                   
                   <div className={styles.infoRow}>
-                    <Text className={styles.infoLabel}>Status:</Text>
+                    <Text className={styles.infoLabel}>Státusz:</Text>
                     <div className={styles.infoValue}>
                       {getStatusBadge(guest.status)}
                     </div>
                   </div>
                   
                   <div className={styles.infoRow}>
-                    <Text className={styles.infoLabel}>Invited:</Text>
+                    <Text className={styles.infoLabel}>Meghívva:</Text>
                     <Body1 className={styles.infoValue}>
                       <Calendar20Regular /> {new Date(guest.invited_at).toLocaleString()}
                     </Body1>
@@ -320,7 +320,7 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
                   
                   {guest.accepted_at && (
                     <div className={styles.infoRow}>
-                      <Text className={styles.infoLabel}>Accepted:</Text>
+                      <Text className={styles.infoLabel}>Elfogadva:</Text>
                       <Body1 className={styles.infoValue}>
                         <Calendar20Regular /> {new Date(guest.accepted_at).toLocaleString()}
                       </Body1>
@@ -329,7 +329,7 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
                   
                   {guest.expires_at && (
                     <div className={styles.infoRow}>
-                      <Text className={styles.infoLabel}>Expires:</Text>
+                      <Text className={styles.infoLabel}>Lejár:</Text>
                       <Body1 className={styles.infoValue}>
                         <Calendar20Regular /> {new Date(guest.expires_at).toLocaleString()}
                         {(() => {
@@ -338,7 +338,7 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
                           const daysUntilExpiry = Math.floor((expiryDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
                           
                           if (daysUntilExpiry < 0) {
-                            return <Badge appearance="filled" color="danger" size="small" style={{ marginLeft: '8px' }}>Expired</Badge>;
+                            return <Badge appearance="filled" color="danger" size="small" style={{ marginLeft: '8px' }}>Lejárt</Badge>;
                           } else if (daysUntilExpiry <= 7) {
                             return <Badge appearance="filled" color="warning" size="small" style={{ marginLeft: '8px' }}>{daysUntilExpiry} days</Badge>;
                           } else {
@@ -351,7 +351,7 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
                   
                   {guest.revoked_at && (
                     <div className={styles.infoRow}>
-                      <Text className={styles.infoLabel}>Revoked:</Text>
+                      <Text className={styles.infoLabel}>Visszavonva:</Text>
                       <Body1 className={styles.infoValue}>
                         <DismissCircle20Regular /> {new Date(guest.revoked_at).toLocaleString()}
                         {guest.revoked_by && <Caption1> by {guest.revoked_by}</Caption1>}
@@ -361,14 +361,14 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
                   
                   {guest.revocation_reason && (
                     <div className={styles.infoRow}>
-                      <Text className={styles.infoLabel}>Revocation Reason:</Text>
+                      <Text className={styles.infoLabel}>Visszavonás Oka:</Text>
                       <Text className={styles.infoValue}>{guest.revocation_reason}</Text>
                     </div>
                   )}
                   
                   {guest.azure_ad_id && (
                     <div className={styles.infoRow}>
-                      <Text className={styles.infoLabel}>Azure AD ID:</Text>
+                      <Text className={styles.infoLabel}>Azure AD Azonosító:</Text>
                       <Caption1 className={styles.infoValue}>{guest.azure_ad_id}</Caption1>
                     </div>
                   )}
@@ -382,7 +382,7 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
                     <div className={styles.section}>
                       <div className={styles.sectionHeader}>
                         <Calendar20Regular />
-                        <Title3>Extension History</Title3>
+                        <Title3>Meghosszabbítási Előzmények</Title3>
                       </div>
                       
                       <div className={styles.activityList}>
@@ -394,16 +394,16 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
                             />
                             <div className={styles.activityContent}>
                               <Text className={styles.activityTitle}>
-                                Extended to {new Date(extension.new_expiry_date).toLocaleDateString()}
+                                Meghosszabbítva: {new Date(extension.new_expiry_date).toLocaleDateString()}
                               </Text>
                               <Caption1>
-                                By {extension.extended_by} on {new Date(extension.extended_at).toLocaleString()}
+                                {extension.extended_by} által {new Date(extension.extended_at).toLocaleString()}-kor
                               </Caption1>
                               <Text size="200" style={{ marginTop: '4px' }}>
-                                Justification: {extension.justification}
+                                Indoklás: {extension.justification}
                               </Text>
                               <Caption1 style={{ color: tokens.colorNeutralForeground3 }}>
-                                Previous expiry: {new Date(extension.previous_expiry_date).toLocaleDateString()}
+                                Korábbi lejárat: {new Date(extension.previous_expiry_date).toLocaleDateString()}
                               </Caption1>
                             </div>
                           </div>
@@ -415,7 +415,7 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
                           appearance="filled"
                           color={guest.extended_count === 0 ? 'success' : guest.extended_count >= 2 ? 'warning' : 'informative'}
                         >
-                          {guest.extended_count} / 3 extensions used
+                          {guest.extended_count} / 3 meghosszabbítás felhasználva
                         </Badge>
                       )}
                     </div>
@@ -427,7 +427,7 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
                 <div className={styles.section}>
                   <div className={styles.sectionHeader}>
                     <Shield20Regular />
-                    <Title3>Group Assignments</Title3>
+                    <Title3>Csoport Hozzárendelések</Title3>
                     <GuestGroupAssignment
                       guestId={guest.id}
                       guestName={guest.display_name}
@@ -445,7 +445,7 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
                       ))}
                     </div>
                   ) : (
-                    <Caption1>No groups assigned</Caption1>
+                    <Caption1>Nincs hozzárendelt csoport</Caption1>
                   )}
                 </div>
 
@@ -454,7 +454,7 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
                 <div className={styles.section}>
                   <div className={styles.sectionHeader}>
                     <History20Regular />
-                    <Title3>Activity History</Title3>
+                    <Title3>Tevékenységi Előzmények</Title3>
                   </div>
                   
                   {guest.activity && guest.activity.length > 0 ? (
@@ -474,7 +474,7 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
                       ))}
                     </div>
                   ) : (
-                    <Caption1>No activity recorded</Caption1>
+                    <Caption1>Nincs rögzített tevékenység</Caption1>
                   )}
                 </div>
               </>
@@ -482,7 +482,7 @@ export const GuestDetail = ({ guestId, open, onClose, onUpdate }: GuestDetailPro
           </DialogContent>
           <DialogActions>
             <Button appearance="secondary" icon={<DismissCircle20Regular />} onClick={onClose}>
-              Close
+              Bezárás
             </Button>
           </DialogActions>
         </DialogBody>

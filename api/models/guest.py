@@ -41,7 +41,7 @@ class GuestUser(Base):
         DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )
     created_by = Column(String(255))  # User who invited the guest
-    
+
     # Lifecycle fields
     expires_at = Column(DateTime(timezone=True))  # When guest access expires
     extended_count = Column(Integer, default=0)  # Number of times access was extended
@@ -109,7 +109,7 @@ class GuestExtension(Base):
     previous_expiry_date = Column(DateTime(timezone=True), nullable=False)
     new_expiry_date = Column(DateTime(timezone=True), nullable=False)
     justification = Column(Text, nullable=False)  # Reason for extension
-    
+
     # Relationships
     guest_user = relationship("GuestUser", backref="extensions")
 
@@ -120,15 +120,21 @@ class GuestLifecyclePolicy(Base):
     __tablename__ = "guest_lifecycle_policy"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
-    partner_company_id = Column(Integer, ForeignKey("partner_company.id"), unique=True, nullable=False)
-    default_expiry_days = Column(Integer, nullable=False, default=90)  # Default guest expiry in days
-    max_extensions = Column(Integer, nullable=False, default=3)  # Maximum number of extensions allowed
+    partner_company_id = Column(
+        Integer, ForeignKey("partner_company.id"), unique=True, nullable=False
+    )
+    default_expiry_days = Column(
+        Integer, nullable=False, default=90
+    )  # Default guest expiry in days
+    max_extensions = Column(
+        Integer, nullable=False, default=3
+    )  # Maximum number of extensions allowed
     extension_period_days = Column(Integer, nullable=False, default=90)  # Days per extension
     auto_expire_enabled = Column(Boolean, default=True)  # Whether to auto-expire guests
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at = Column(
         DateTime(timezone=True), default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
     )
-    
+
     # Relationships
     partner_company = relationship("PartnerCompany", backref="lifecycle_policy")

@@ -88,19 +88,19 @@ export const ActivityFeed = ({ activities = [], loading = false, error = false }
 
   return (
     <Card className={styles.card} role="region" aria-label="Recent activity feed">
-      <CardHeader header={<Text weight="semibold" as="h2">Recent Activity</Text>} />
+      <CardHeader header={<Text weight="semibold" as="h2">Legutóbbi Tevékenységek</Text>} />
       <div className={styles.content} role="feed" aria-busy={loading} aria-live="polite">
         {loading ? (
           <div className={styles.loading} role="status">
-            <Spinner size="small" label="Loading activities..." />
+            <Spinner size="small" label="Tevékenységek betöltése..." />
           </div>
         ) : error ? (
           <div className={styles.emptyState} role="alert">
-            <Text>Failed to load activities</Text>
+            <Text>Nem sikerült betölteni a tevékenységeket</Text>
           </div>
         ) : activities.length === 0 ? (
           <div className={styles.emptyState}>
-            <Text>No recent activity</Text>
+            <Text>Nincs újabb tevékenység</Text>
           </div>
         ) : (
           activities.map((activity) => (

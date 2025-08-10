@@ -56,6 +56,8 @@ vi.mock('@/config/auth.config', () => ({
   apiScopes: ['User.Read'],
   graphScopes: ['User.Read'],
   msalInstance: mockMsalInstance,
+  // Ensure tests that check isE2EMode() work
+  isE2EMode: () => true,
 }));
 
 // Mock MSAL

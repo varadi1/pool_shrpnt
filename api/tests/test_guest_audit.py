@@ -75,9 +75,9 @@ async def test_invite_guest_logs_audit_event(guest_service_with_audit, db_sessio
         if call.kwargs.get("action") == "GUEST_INVITED":
             invited_call = call
             break
-    
+
     assert invited_call is not None, "GUEST_INVITED event should be logged"
-    
+
     assert invited_call.kwargs["user_id"] == "admin@company.com"
     assert invited_call.kwargs["guest_email"] == "test@example.com"
     assert invited_call.kwargs["action"] == "GUEST_INVITED"
@@ -107,11 +107,11 @@ async def test_check_invitation_logs_accepted_event(guest_service_with_audit, db
     )
     db_session.add(guest)
     await db_session.commit()
-    
+
     # Create pending invitation
     from api.models.guest import GuestInvitation
     from datetime import datetime, timedelta, UTC
-    
+
     invitation = GuestInvitation(
         guest_user_id=guest.id,
         invitation_id="test-invitation-123",
@@ -130,6 +130,7 @@ async def test_check_invitation_logs_accepted_event(guest_service_with_audit, db
 
     with patch.object(guest_service_with_audit.graph_auth, "get_graph_client") as mock_client:
         from unittest.mock import AsyncMock
+
         mock_http_client = AsyncMock()
         mock_response = MagicMock()
         mock_response.status_code = 200
@@ -150,9 +151,9 @@ async def test_check_invitation_logs_accepted_event(guest_service_with_audit, db
         if call.kwargs.get("action") == "GUEST_ACCEPTED":
             accepted_call = call
             break
-    
+
     assert accepted_call is not None, "GUEST_ACCEPTED event should be logged"
-    
+
     assert accepted_call.kwargs["user_id"] == "system"
     assert accepted_call.kwargs["guest_email"] == "test@example.com"
     assert accepted_call.kwargs["action"] == "GUEST_ACCEPTED"
@@ -289,10 +290,10 @@ async def test_update_guest_groups_logs_changes(guest_service_with_audit, db_ses
     # Check that at least one audit event was logged
     calls = guest_service_with_audit.audit_service.log_guest_event.call_args_list
     assert len(calls) > 0
-    
+
     # Get the last call
     last_call = calls[-1]
-    
+
     assert last_call.kwargs["user_id"] == "admin@company.com"
     assert last_call.kwargs["guest_email"] == "test@example.com"
     assert last_call.kwargs["action"] == "GUEST_ASSIGNED"

@@ -16,7 +16,12 @@ class Settings(BaseSettings):
 
     api_prefix: str = "/api/v1"
     allowed_hosts: list[str] = ["*"]
-    cors_origins: list[str] = ["http://localhost:3000", "http://localhost:5173", "http://127.0.0.1:5173", "*"]
+    cors_origins: list[str] = [
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "*",
+    ]
 
     database_url: str = "postgresql://pooldrv:pooldrv@localhost:5432/pooldrv"
     database_echo: bool = False

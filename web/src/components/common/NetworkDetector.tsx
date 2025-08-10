@@ -7,8 +7,7 @@ import {
   makeStyles,
 } from '@fluentui/react-components';
 import { 
-  WifiOff20Regular, 
-  WifiCheckmark20Regular,
+  WifiOff20Regular,
   ArrowClockwise20Regular,
 } from '@fluentui/react-icons';
 import { showWarningToast, showSuccessToast } from '@/utils/errorHandler';

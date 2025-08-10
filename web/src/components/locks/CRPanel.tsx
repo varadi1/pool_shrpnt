@@ -30,8 +30,6 @@ import {
   DataGridBody,
   DataGridRow,
   DataGridCell,
-  TableColumnDefinition,
-  createTableColumn,
 } from '@fluentui/react-components';
 import {
   ClockRegular,
@@ -233,65 +231,57 @@ export const CRPanel: React.FC<CRPanelProps> = ({ emId, currentLockState, userRo
 
   const canManageCR = userRole === 'admin' || userRole === 'pm';
 
-  // Define columns for history table
-  const columns: TableColumnDefinition<ChangeRequest>[] = [
-    createTableColumn<ChangeRequest>({
-      columnId: 'status',
-      renderHeaderCell: () => 'Status',
-      renderCell: (item) => (
-        <Badge
-          appearance="filled"
-          color={
-            item.status === 'active' ? 'success' :
-            item.status === 'expired' ? 'warning' :
-            'neutral'
-          }
-        >
-          {item.status}
-        </Badge>
-      ),
-    }),
-    createTableColumn<ChangeRequest>({
-      columnId: 'scope',
-      renderHeaderCell: () => 'Scope',
-      renderCell: (item) => (
-        <Text>{item.scope === 'experts' ? 'Szakértők' : 'Eredménytermékek'}</Text>
-      ),
-    }),
-    createTableColumn<ChangeRequest>({
-      columnId: 'reason',
-      renderHeaderCell: () => 'Reason',
-      renderCell: (item) => <Text>{item.reason}</Text>,
-    }),
-    createTableColumn<ChangeRequest>({
-      columnId: 'createdBy',
-      renderHeaderCell: () => 'Created By',
-      renderCell: (item) => <Text>{item.createdBy.name}</Text>,
-    }),
-    createTableColumn<ChangeRequest>({
-      columnId: 'createdAt',
-      renderHeaderCell: () => 'Created',
-      renderCell: (item) => (
-        <Text>{format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm')}</Text>
-      ),
-    }),
-    createTableColumn<ChangeRequest>({
-      columnId: 'expires',
-      renderHeaderCell: () => 'Expires/Expired',
-      renderCell: (item) => (
-        <Text>
-          {item.status === 'active' && countdowns[item.id] ? (
-            <span className={styles.countdown}>
-              <ClockRegular />
-              {countdowns[item.id]}
-            </span>
-          ) : (
-            format(new Date(item.expiresAt), 'yyyy-MM-dd HH:mm')
-          )}
-        </Text>
-      ),
-    }),
-  ];
+  // Define column headers for history table
+  const columnIds = ['status', 'scope', 'reason', 'createdBy', 'createdAt', 'expires'];
+  const columnHeaders = {
+    status: 'Status',
+    scope: 'Scope',
+    reason: 'Reason',
+    createdBy: 'Created By',
+    createdAt: 'Created',
+    expires: 'Expires/Expired'
+  };
+
+  const renderCellContent = (item: ChangeRequest, columnId: string) => {
+    switch (columnId) {
+      case 'status':
+        return (
+          <Badge
+            appearance="filled"
+            color={
+              item.status === 'active' ? 'success' :
+              item.status === 'expired' ? 'warning' :
+              'neutral'
+            }
+          >
+            {item.status}
+          </Badge>
+        );
+      case 'scope':
+        return <Text>{item.scope === 'experts' ? 'Szakértők' : 'Eredménytermékek'}</Text>;
+      case 'reason':
+        return <Text>{item.reason}</Text>;
+      case 'createdBy':
+        return <Text>{item.createdBy.name}</Text>;
+      case 'createdAt':
+        return <Text>{format(new Date(item.createdAt), 'yyyy-MM-dd HH:mm')}</Text>;
+      case 'expires':
+        return (
+          <Text>
+            {item.status === 'active' && countdowns[item.id] ? (
+              <span className={styles.countdown}>
+                <ClockRegular />
+                {countdowns[item.id]}
+              </span>
+            ) : (
+              format(new Date(item.expiresAt), 'yyyy-MM-dd HH:mm')
+            )}
+          </Text>
+        );
+      default:
+        return null;
+    }
+  };
 
   if (isLoading) {
     return (
@@ -489,26 +479,29 @@ export const CRPanel: React.FC<CRPanelProps> = ({ emId, currentLockState, userRo
           <CardPreview>
             <DataGrid
               items={historyCRsList}
-              columns={columns}
               sortable
               resizableColumns
               size="small"
             >
               <DataGridHeader>
                 <DataGridRow>
-                  {({ renderHeaderCell }) => (
-                    <DataGridHeaderCell>{renderHeaderCell()}</DataGridHeaderCell>
-                  )}
+                  {columnIds.map((columnId) => (
+                    <DataGridHeaderCell key={columnId}>
+                      {columnHeaders[columnId as keyof typeof columnHeaders]}
+                    </DataGridHeaderCell>
+                  ))}
                 </DataGridRow>
               </DataGridHeader>
-              <DataGridBody<ChangeRequest>>
-                {({ item, rowId }) => (
-                  <DataGridRow<ChangeRequest> key={rowId}>
-                    {({ renderCell }) => (
-                      <DataGridCell>{renderCell(item)}</DataGridCell>
-                    )}
+              <DataGridBody>
+                {historyCRsList.map((item) => (
+                  <DataGridRow key={item.id}>
+                    {columnIds.map((columnId) => (
+                      <DataGridCell key={columnId}>
+                        {renderCellContent(item, columnId)}
+                      </DataGridCell>
+                    ))}
                   </DataGridRow>
-                )}
+                ))}
               </DataGridBody>
             </DataGrid>
           </CardPreview>

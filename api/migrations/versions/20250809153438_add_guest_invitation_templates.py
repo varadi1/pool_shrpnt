@@ -5,6 +5,7 @@ Revises: 4eb2033411e9
 Create Date: 2025-08-09 15:34:38.000000
 
 """
+
 from collections.abc import Sequence
 from datetime import UTC, datetime
 from uuid import uuid4

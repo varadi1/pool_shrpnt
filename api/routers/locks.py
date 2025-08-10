@@ -34,16 +34,12 @@ def get_locks_summary(
     db: Session = Depends(get_db),
 ) -> dict:
     """Get summary of locks for dashboard.
-    
+
     Returns:
         Summary of time locks, CR unlocks, and manual locks
     """
     # Return mock data for now
-    return {
-        "timeLocked": 0,
-        "crUnlocked": 0,
-        "manualLocked": 0
-    }
+    return {"timeLocked": 0, "crUnlocked": 0, "manualLocked": 0}
 
 
 @router.put("/rules/{em_id}")

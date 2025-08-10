@@ -1,4 +1,5 @@
 """Notification system models."""
+
 from uuid import uuid4
 
 from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, String, Text, text

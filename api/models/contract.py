@@ -35,6 +35,9 @@ class PartnerCompany(Base):
     company_code = Column(String(50), unique=True, nullable=False, index=True)
     name = Column(String(255), nullable=False)
     short_name = Column(String(50), nullable=False)
+    # Optional fields used by tests and some integrations
+    short_code = Column(String(50))
+    domain = Column(String(255))
     tax_number = Column(String(50))
     address = Column(Text)
     contact_email = Column(String(255))

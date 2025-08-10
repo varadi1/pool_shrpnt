@@ -2,6 +2,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { vi } from 'vitest';
 import { GuestList } from '../GuestList';
 import { FluentProvider, webLightTheme } from '@fluentui/react-components';
+import { api } from '@/services/api';
 
 vi.mock('@/services/api', () => ({
   api: {
@@ -59,7 +60,6 @@ describe('GuestList', () => {
   });
 
   it('renders guest list with loading state', () => {
-    const { api } = require('@/services/api');
     vi.mocked(api.getGuests).mockImplementation(() => new Promise(() => {}));
     
     render(
@@ -72,7 +72,6 @@ describe('GuestList', () => {
   });
 
   it('renders guest list with data', async () => {
-    const { api } = require('@/services/api');
     vi.mocked(api.getGuests).mockResolvedValueOnce({ items: mockGuests, total: 3, page: 1, page_size: 10 });
     
     render(
@@ -89,7 +88,6 @@ describe('GuestList', () => {
   });
 
   it('displays correct status badges', async () => {
-    const { api } = require('@/services/api');
     vi.mocked(api.getGuests).mockResolvedValueOnce({ items: mockGuests, total: 3, page: 1, page_size: 10 });
     
     render(
@@ -106,7 +104,6 @@ describe('GuestList', () => {
   });
 
   it('filters guests by search term', async () => {
-    const { api } = require('@/services/api');
     vi.mocked(api.getGuests).mockResolvedValueOnce({ items: mockGuests, total: 3, page: 1, page_size: 10 });
     
     render(
@@ -127,7 +124,6 @@ describe('GuestList', () => {
   });
 
   it('filters guests by status', async () => {
-    const { api } = require('@/services/api');
     vi.mocked(api.getGuests).mockResolvedValueOnce({ items: mockGuests, total: 3, page: 1, page_size: 10 });
     
     render(
@@ -149,7 +145,6 @@ describe('GuestList', () => {
   });
 
   it('handles refresh button click', async () => {
-    const { api } = require('@/services/api');
     vi.mocked(api.getGuests).mockResolvedValueOnce({ items: mockGuests, total: 3, page: 1, page_size: 10 });
     
     render(
@@ -176,7 +171,6 @@ describe('GuestList', () => {
   });
 
   it('handles resend invitation', async () => {
-    const { api } = require('@/services/api');
     vi.mocked(api.getGuests).mockResolvedValueOnce({ items: mockGuests, total: 3, page: 1, page_size: 10 });
     vi.mocked(api.resendInvitation).mockResolvedValueOnce({ success: true });
     
@@ -200,7 +194,6 @@ describe('GuestList', () => {
   });
 
   it('handles error when fetching guests', async () => {
-    const { api } = require('@/services/api');
     vi.mocked(api.getGuests).mockRejectedValueOnce(new Error('Failed to fetch guests'));
     
     render(
@@ -215,7 +208,6 @@ describe('GuestList', () => {
   });
 
   it('handles pagination', async () => {
-    const { api } = require('@/services/api');
     vi.mocked(api.getGuests).mockResolvedValueOnce({ 
       items: mockGuests, 
       total: 30, 

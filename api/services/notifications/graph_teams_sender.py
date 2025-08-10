@@ -1,4 +1,5 @@
 """Teams notification sender using Microsoft Graph API."""
+
 import json
 import logging
 from datetime import UTC, datetime

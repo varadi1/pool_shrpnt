@@ -5,16 +5,18 @@ import { Dashboard } from '@/pages/Dashboard';
 import { Login } from '@/pages/Login';
 import { Contracts } from '@/pages/Contracts';
 import { Orders } from '@/pages/Orders';
+import { NewOrder } from '@/pages/orders/NewOrder';
 import { Templates } from '@/pages/Templates';
+import { TemplateEditor } from '@/pages/templates/TemplateEditor';
 import { Locks } from '@/pages/Locks';
 import { Settings } from '@/pages/Settings';
+import { Guests } from '@/pages/Guests';
 
 // Placeholder components for routes not yet implemented
-const Users = () => <div>Users & Groups Page (Coming Soon)</div>;
-const Permissions = () => <div>Permissions Page (Coming Soon)</div>;
-const Guests = () => <div>Guest Management Page (Coming Soon)</div>;
-const Reports = () => <div>Reports Page (Coming Soon)</div>;
-const Audit = () => <div>Audit Page (Coming Soon)</div>;
+const Users = () => <div>Felhasználók és Csoportok (Hamarosan)</div>;
+const Permissions = () => <div>Jogosultságok (Hamarosan)</div>;
+const Reports = () => <div>Jelentések (Hamarosan)</div>;
+const Audit = () => <div>Audit Napló (Hamarosan)</div>;
 
 export const router = createBrowserRouter([
   {
@@ -58,10 +60,50 @@ export const router = createBrowserRouter([
         ),
       },
       {
+        path: '/orders/new',
+        element: (
+          <ProtectedRoute requiredRoles={['NEU_Admin', 'NEU_PM']} requireAny={true}>
+            <NewOrder />
+          </ProtectedRoute>
+        ),
+      },
+      {
         path: '/templates',
         element: (
           <ProtectedRoute requiredRoles={['NEU_Admin']}>
             <Templates />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/templates/new',
+        element: (
+          <ProtectedRoute requiredRoles={['NEU_Admin']}>
+            <TemplateEditor />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/templates/:id',
+        element: (
+          <ProtectedRoute requiredRoles={['NEU_Admin']}>
+            <Templates />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/templates/:id/edit',
+        element: (
+          <ProtectedRoute requiredRoles={['NEU_Admin']}>
+            <TemplateEditor />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/templates/:id/clone',
+        element: (
+          <ProtectedRoute requiredRoles={['NEU_Admin']}>
+            <TemplateEditor />
           </ProtectedRoute>
         ),
       },

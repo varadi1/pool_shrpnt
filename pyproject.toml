@@ -26,6 +26,7 @@ dependencies = [
     "greenlet>=3.2.4",
     "deepdiff>=8.6.0",
     "freezegun>=1.5.4",
+    "loguru>=0.7.2",
 ]
 
 [build-system]

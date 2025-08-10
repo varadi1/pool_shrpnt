@@ -72,8 +72,8 @@ export const MetricCard = ({
   };
 
   const getAriaLabel = () => {
-    if (loading) return `${title}: Loading`;
-    if (error) return `${title}: Failed to load`;
+    if (loading) return `${title}: Betöltés`;
+    if (error) return `${title}: Hiba`;
     const statusText = status !== 'normal' ? `, ${status}` : '';
     const subtitleText = subtitle ? `, ${subtitle}` : '';
     return `${title}: ${value ?? 'No data'}${statusText}${subtitleText}`;
@@ -92,11 +92,11 @@ export const MetricCard = ({
       />
       <div className={styles.content} aria-live="polite" aria-atomic="true">
         {loading ? (
-          <div className={styles.loading} role="status" aria-label="Loading">
+          <div className={styles.loading} role="status" aria-label="Betöltés">
             <Spinner size="small" />
           </div>
         ) : error ? (
-          <Text className={styles.error} role="alert">Failed to load</Text>
+          <Text className={styles.error} role="alert">Hiba</Text>
         ) : (
           <>
             <Text as="div" className={getValueClass()} aria-label={`Value: ${value ?? 'No data'}`}>

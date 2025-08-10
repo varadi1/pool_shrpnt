@@ -6,11 +6,12 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 # Security scheme for Bearer token
-security = HTTPBearer()
+# Set auto_error=False so we can return 401 for missing credentials instead of 403
+security = HTTPBearer(auto_error=False)
 
 
 async def get_current_user(
-    credentials: Annotated[HTTPAuthorizationCredentials, Depends(security)],
+    credentials: Annotated[HTTPAuthorizationCredentials | None, Depends(security)],
 ) -> dict:
     """Dependency to get the current authenticated user.
 
@@ -30,8 +31,11 @@ async def get_current_user(
         HTTPException: If authentication fails
     """
     # TODO: Implement actual JWT validation
-    # For now, accept any token and return a mock user for development
+    # For now, require presence of a Bearer token and return a mock user for development
     # This is temporary to allow frontend testing
+
+    if credentials is None or not getattr(credentials, "credentials", None):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated")
 
     # Mock user - replace with actual JWT decoding
     return {

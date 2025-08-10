@@ -16,34 +16,54 @@ import { vi } from 'vitest';
 
 expect.extend(toHaveNoViolations);
 
-// Mock msalInstance directly
-const mockMsalInstance = {
-  initialize: vi.fn().mockResolvedValue(undefined),
-  handleRedirectPromise: vi.fn().mockResolvedValue(null),
-  getAllAccounts: vi.fn().mockReturnValue([{
-    username: 'test@example.com',
-    name: 'Test User',
-    idTokenClaims: { roles: ['NEU_Admin'] }
-  }]),
-  acquireTokenSilent: vi.fn().mockResolvedValue({
-    accessToken: 'mock-token',
-    idToken: 'mock-id-token',
-    account: {
+// Mock @azure/msal-browser before anything else
+vi.mock('@azure/msal-browser', () => ({
+  PublicClientApplication: vi.fn().mockImplementation(() => ({
+    initialize: vi.fn().mockResolvedValue(undefined),
+    handleRedirectPromise: vi.fn().mockResolvedValue(null),
+    getAllAccounts: vi.fn().mockReturnValue([{
       username: 'test@example.com',
-      name: 'Test User'
-    }
-  }),
-  addEventCallback: vi.fn().mockReturnValue('callback-id'),
-  removeEventCallback: vi.fn(),
-  setActiveAccount: vi.fn(),
-  getActiveAccount: vi.fn().mockReturnValue({
-    username: 'test@example.com',
-    name: 'Test User',
-    idTokenClaims: { roles: ['NEU_Admin'] }
-  }),
-};
+      name: 'Test User',
+      idTokenClaims: { roles: ['NEU_Admin'] }
+    }]),
+    acquireTokenSilent: vi.fn().mockResolvedValue({
+      accessToken: 'mock-token',
+      idToken: 'mock-id-token',
+      account: {
+        username: 'test@example.com',
+        name: 'Test User'
+      }
+    }),
+    addEventCallback: vi.fn().mockReturnValue('callback-id'),
+    removeEventCallback: vi.fn(),
+    setActiveAccount: vi.fn(),
+    getActiveAccount: vi.fn().mockReturnValue({
+      username: 'test@example.com',
+      name: 'Test User',
+      idTokenClaims: { roles: ['NEU_Admin'] }
+    }),
+  })),
+  EventType: {
+    LOGIN_SUCCESS: 'msal:loginSuccess',
+    LOGIN_FAILURE: 'msal:loginFailure',
+    ACQUIRE_TOKEN_SUCCESS: 'msal:acquireTokenSuccess',
+    ACQUIRE_TOKEN_FAILURE: 'msal:acquireTokenFailure',
+  },
+  InteractionStatus: {
+    None: 'none',
+    Login: 'login',
+    Logout: 'logout',
+    AcquireToken: 'acquireToken',
+  },
+  LogLevel: {
+    Error: 0,
+    Warning: 1,
+    Info: 2,
+    Verbose: 3,
+  },
+}));
 
-// Mock the auth config with the msalInstance
+// Mock the auth config
 vi.mock('@/config/auth.config', () => ({
   msalConfig: {
     auth: {
@@ -60,33 +80,32 @@ vi.mock('@/config/auth.config', () => ({
     scopes: ['User.Read'],
   },
   apiScopes: ['api://pooldrv/access'],
-  msalInstance: mockMsalInstance,
-}));
-
-// Mock MSAL
-vi.mock('@azure/msal-browser', () => ({
-  PublicClientApplication: vi.fn().mockImplementation(() => mockMsalInstance),
-  EventType: {
-    LOGIN_SUCCESS: 'msal:loginSuccess',
-    LOGIN_FAILURE: 'msal:loginFailure',
-    ACQUIRE_TOKEN_SUCCESS: 'msal:acquireTokenSuccess',
-    ACQUIRE_TOKEN_FAILURE: 'msal:acquireTokenFailure',
+  msalInstance: {
+    initialize: vi.fn().mockResolvedValue(undefined),
+    handleRedirectPromise: vi.fn().mockResolvedValue(null),
+    getAllAccounts: vi.fn().mockReturnValue([{
+      username: 'test@example.com',
+      name: 'Test User',
+      idTokenClaims: { roles: ['NEU_Admin'] }
+    }]),
+    acquireTokenSilent: vi.fn().mockResolvedValue({
+      accessToken: 'mock-token',
+      idToken: 'mock-id-token',
+      account: {
+        username: 'test@example.com',
+        name: 'Test User'
+      }
+    }),
+    addEventCallback: vi.fn().mockReturnValue('callback-id'),
+    removeEventCallback: vi.fn(),
+    setActiveAccount: vi.fn(),
+    getActiveAccount: vi.fn().mockReturnValue({
+      username: 'test@example.com',
+      name: 'Test User',
+      idTokenClaims: { roles: ['NEU_Admin'] }
+    }),
   },
-  InteractionStatus: {
-    None: 'none',
-    Login: 'login',
-    Logout: 'logout',
-    AcquireToken: 'acquireToken',
-    SsoSilent: 'ssoSilent',
-    HandleRedirect: 'handleRedirect',
-  },
-  LogLevel: {
-    Error: 0,
-    Warning: 1,
-    Info: 2,
-    Verbose: 3,
-    Trace: 4,
-  },
+  isE2EMode: vi.fn(() => false),
 }));
 
 // Mock API client

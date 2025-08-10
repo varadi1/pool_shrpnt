@@ -2,10 +2,15 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Authentication Flow', () => {
   test.beforeEach(async ({ page }) => {
-    // Mock MSAL to avoid real authentication
+    // Enable E2E auth mock mode
     await page.addInitScript(() => {
-      // Mock the MSAL module
       (window as any).__MSAL_MOCK__ = true;
+      // Provide a mock account snapshot similar to our hook
+      window.sessionStorage.setItem('mock-account', JSON.stringify({
+        username: 'test@example.com',
+        name: 'Test User',
+        idTokenClaims: { roles: ['NEU_Admin'] },
+      }));
     });
     
     // Navigate to the application

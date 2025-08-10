@@ -53,17 +53,17 @@ describe('Role-Based Access Control Tests', () => {
       renderWithProviders(<Navigation />);
 
       // Admin should see all navigation items
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
-      expect(screen.getByText('Contracts')).toBeInTheDocument();
-      expect(screen.getByText('Orders')).toBeInTheDocument();
-      expect(screen.getByText('Templates')).toBeInTheDocument();
-      expect(screen.getByText('Locks')).toBeInTheDocument();
-      expect(screen.getByText('Users & Groups')).toBeInTheDocument();
-      expect(screen.getByText('Permissions')).toBeInTheDocument();
-      expect(screen.getByText('Guest Management')).toBeInTheDocument();
-      expect(screen.getByText('Reports')).toBeInTheDocument();
-      expect(screen.getByText('Audit')).toBeInTheDocument();
-      expect(screen.getByText('Settings')).toBeInTheDocument();
+      expect(screen.getByText('Vezérlőpult')).toBeInTheDocument();
+      expect(screen.getByText('Szerződések')).toBeInTheDocument();
+      expect(screen.getByText('Megrendelések')).toBeInTheDocument();
+      expect(screen.getByText('Sablonok')).toBeInTheDocument();
+      expect(screen.getByText('Zárolások')).toBeInTheDocument();
+      expect(screen.getByText('Felhasználók és Csoportok')).toBeInTheDocument();
+      expect(screen.getByText('Jogosultságok')).toBeInTheDocument();
+      expect(screen.getByText('Vendég Kezelés')).toBeInTheDocument();
+      expect(screen.getByText('Jelentések')).toBeInTheDocument();
+      expect(screen.getByText('Audit Napló')).toBeInTheDocument();
+      expect(screen.getByText('Beállítások')).toBeInTheDocument();
     });
 
     it('should show limited items for NEU_PM role', () => {
@@ -81,17 +81,17 @@ describe('Role-Based Access Control Tests', () => {
       renderWithProviders(<Navigation />);
 
       // PM should see limited navigation items
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
-      expect(screen.getByText('Contracts')).toBeInTheDocument();
-      expect(screen.getByText('Orders')).toBeInTheDocument();
-      expect(screen.queryByText('Templates')).not.toBeInTheDocument(); // Admin only
-      expect(screen.getByText('Locks')).toBeInTheDocument();
-      expect(screen.queryByText('Users & Groups')).not.toBeInTheDocument(); // Admin only
-      expect(screen.queryByText('Permissions')).not.toBeInTheDocument(); // Admin only
-      expect(screen.getByText('Guest Management')).toBeInTheDocument();
-      expect(screen.getByText('Reports')).toBeInTheDocument();
-      expect(screen.queryByText('Audit')).not.toBeInTheDocument(); // Admin only
-      expect(screen.getByText('Settings')).toBeInTheDocument();
+      expect(screen.getByText('Vezérlőpult')).toBeInTheDocument();
+      expect(screen.getByText('Szerződések')).toBeInTheDocument();
+      expect(screen.getByText('Megrendelések')).toBeInTheDocument();
+      expect(screen.queryByText('Sablonok')).not.toBeInTheDocument(); // Admin only
+      expect(screen.getByText('Zárolások')).toBeInTheDocument();
+      expect(screen.queryByText('Felhasználók és Csoportok')).not.toBeInTheDocument(); // Admin only
+      expect(screen.queryByText('Jogosultságok')).not.toBeInTheDocument(); // Admin only
+      expect(screen.getByText('Vendég Kezelés')).toBeInTheDocument();
+      expect(screen.getByText('Jelentések')).toBeInTheDocument();
+      expect(screen.queryByText('Audit Napló')).not.toBeInTheDocument(); // Admin only
+      expect(screen.getByText('Beállítások')).toBeInTheDocument();
     });
 
     it('should show minimal items for users with no roles', () => {
@@ -109,17 +109,17 @@ describe('Role-Based Access Control Tests', () => {
       renderWithProviders(<Navigation />);
 
       // Users with no roles should only see basic items
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
-      expect(screen.queryByText('Contracts')).not.toBeInTheDocument();
-      expect(screen.queryByText('Orders')).not.toBeInTheDocument();
-      expect(screen.queryByText('Templates')).not.toBeInTheDocument();
-      expect(screen.queryByText('Locks')).not.toBeInTheDocument();
-      expect(screen.queryByText('Users & Groups')).not.toBeInTheDocument();
-      expect(screen.queryByText('Permissions')).not.toBeInTheDocument();
-      expect(screen.queryByText('Guest Management')).not.toBeInTheDocument();
-      expect(screen.queryByText('Reports')).not.toBeInTheDocument();
-      expect(screen.queryByText('Audit')).not.toBeInTheDocument();
-      expect(screen.getByText('Settings')).toBeInTheDocument();
+      expect(screen.getByText('Vezérlőpult')).toBeInTheDocument();
+      expect(screen.queryByText('Szerződések')).not.toBeInTheDocument();
+      expect(screen.queryByText('Megrendelések')).not.toBeInTheDocument();
+      expect(screen.queryByText('Sablonok')).not.toBeInTheDocument();
+      expect(screen.queryByText('Zárolások')).not.toBeInTheDocument();
+      expect(screen.queryByText('Felhasználók és Csoportok')).not.toBeInTheDocument();
+      expect(screen.queryByText('Jogosultságok')).not.toBeInTheDocument();
+      expect(screen.queryByText('Vendég Kezelés')).not.toBeInTheDocument();
+      expect(screen.queryByText('Jelentések')).not.toBeInTheDocument();
+      expect(screen.queryByText('Audit Napló')).not.toBeInTheDocument();
+      expect(screen.getByText('Beállítások')).toBeInTheDocument();
     });
 
     it('should handle users with multiple roles correctly', () => {
@@ -139,11 +139,11 @@ describe('Role-Based Access Control Tests', () => {
       renderWithProviders(<Navigation />);
 
       // User with both roles should see all items (Admin takes precedence)
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
-      expect(screen.getByText('Templates')).toBeInTheDocument();
-      expect(screen.getByText('Users & Groups')).toBeInTheDocument();
-      expect(screen.getByText('Permissions')).toBeInTheDocument();
-      expect(screen.getByText('Audit')).toBeInTheDocument();
+      expect(screen.getByText('Vezérlőpult')).toBeInTheDocument();
+      expect(screen.getByText('Sablonok')).toBeInTheDocument();
+      expect(screen.getByText('Felhasználók és Csoportok')).toBeInTheDocument();
+      expect(screen.getByText('Jogosultságok')).toBeInTheDocument();
+      expect(screen.getByText('Audit Napló')).toBeInTheDocument();
     });
   });
 
@@ -275,7 +275,7 @@ describe('Role-Based Access Control Tests', () => {
       });
 
       const { rerender } = renderWithProviders(<Navigation />);
-      expect(screen.queryByText('Templates')).not.toBeInTheDocument();
+      expect(screen.queryByText('Sablonok')).not.toBeInTheDocument();
 
       // Update to Admin role
       mockUseAuth.mockReturnValue({
@@ -299,7 +299,7 @@ describe('Role-Based Access Control Tests', () => {
         </BrowserRouter>
       );
 
-      expect(screen.getByText('Templates')).toBeInTheDocument();
+      expect(screen.getByText('Sablonok')).toBeInTheDocument();
     });
   });
 
@@ -319,8 +319,8 @@ describe('Role-Based Access Control Tests', () => {
       renderWithProviders(<Navigation />);
       
       // Should still render basic navigation
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
-      expect(screen.getByText('Settings')).toBeInTheDocument();
+      expect(screen.getByText('Vezérlőpult')).toBeInTheDocument();
+      expect(screen.getByText('Beállítások')).toBeInTheDocument();
     });
 
     it('should handle empty roles array', () => {
@@ -338,8 +338,8 @@ describe('Role-Based Access Control Tests', () => {
       renderWithProviders(<Navigation />);
       
       // Should still render basic navigation
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
-      expect(screen.getByText('Settings')).toBeInTheDocument();
+      expect(screen.getByText('Vezérlőpult')).toBeInTheDocument();
+      expect(screen.getByText('Beállítások')).toBeInTheDocument();
     });
 
     it('should handle malformed role claims', () => {
@@ -357,8 +357,8 @@ describe('Role-Based Access Control Tests', () => {
       renderWithProviders(<Navigation />);
       
       // Should handle gracefully and show basic navigation
-      expect(screen.getByText('Dashboard')).toBeInTheDocument();
-      expect(screen.getByText('Settings')).toBeInTheDocument();
+      expect(screen.getByText('Vezérlőpult')).toBeInTheDocument();
+      expect(screen.getByText('Beállítások')).toBeInTheDocument();
     });
   });
 });

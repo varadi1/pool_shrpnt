@@ -1,4 +1,4 @@
-import { ReactNode, useCallback, useId } from 'react';
+import { type ReactNode, useCallback, useId } from 'react';
 import {
   Toaster,
   useToastController,
@@ -6,7 +6,7 @@ import {
   ToastTitle,
   ToastBody,
   ToastFooter,
-  ToastIntent,
+  type ToastIntent,
   Link,
 } from '@fluentui/react-components';
 import {

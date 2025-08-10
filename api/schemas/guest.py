@@ -157,8 +157,12 @@ class RevokedGuestsListResponse(BaseModel):
 class GuestExtensionRequest(BaseModel):
     """Request model for extending guest access."""
 
-    justification: str = Field(..., min_length=1, max_length=1000, description="Justification for extension")
-    extension_days: int | None = Field(None, ge=1, le=365, description="Days to extend (uses policy default if not specified)")
+    justification: str = Field(
+        ..., min_length=1, max_length=1000, description="Justification for extension"
+    )
+    extension_days: int | None = Field(
+        None, ge=1, le=365, description="Days to extend (uses policy default if not specified)"
+    )
 
 
 class GuestExtensionResponse(BaseModel):

@@ -133,7 +133,7 @@ export const GuestGroupAssignment = ({
       
       setGroups(categorizedGroups);
     } catch (_err: unknown) {
-      setError('Failed to load available groups');
+      setError('Nem sikerült betölteni az elérhető csoportokat');
     } finally {
       setLoading(false);
     }
@@ -170,14 +170,14 @@ export const GuestGroupAssignment = ({
         group_ids: Array.from(selectedGroups),
       });
       
-      setSuccess('Group assignments updated successfully');
+      setSuccess('Csoport hozzárendelések sikeresen frissítve');
       
       setTimeout(() => {
         setOpen(false);
         onUpdate?.();
       }, 1500);
     } catch (err: unknown) {
-      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to update group assignments');
+      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Nem sikerült frissíteni a csoport hozzárendeléseket');
     } finally {
       setSaving(false);
     }
@@ -205,11 +205,11 @@ export const GuestGroupAssignment = ({
   const getSectionTitle = (type: Group['type']) => {
     switch (type) {
       case 'partner':
-        return 'Partner Groups';
+        return 'Partner Csoportok';
       case 'project':
-        return 'Project Groups';
+        return 'Projekt Csoportok';
       default:
-        return 'System Groups';
+        return 'Rendszer Csoportok';
     }
   };
 
@@ -217,15 +217,15 @@ export const GuestGroupAssignment = ({
     <Dialog open={open} onOpenChange={(e, data) => setOpen(data.open)}>
       <DialogTrigger disableButtonEnhancement>
         <Button icon={<PeopleTeam20Regular />} appearance="subtle">
-          Manage Groups
+          Csoportok Kezelése
         </Button>
       </DialogTrigger>
       <DialogSurface>
         <DialogBody>
-          <DialogTitle>Manage Group Assignments</DialogTitle>
+          <DialogTitle>Csoport Hozzárendelések Kezelése</DialogTitle>
           <DialogContent className={styles.dialogContent}>
             <Text>
-              Select the groups that <strong>{guestName}</strong> should be assigned to:
+              Válassza ki a csoportokat, amelyekhez <strong>{guestName}</strong> hozzá legyen rendelve:
             </Text>
 
             {error && (
@@ -242,7 +242,7 @@ export const GuestGroupAssignment = ({
 
             {loading ? (
               <div className={styles.loading}>
-                <Spinner size="medium" label="Loading groups..." />
+                <Spinner size="medium" label="Csoportok betöltése..." />
               </div>
             ) : (
               <div className={styles.groupList}>
@@ -275,13 +275,13 @@ export const GuestGroupAssignment = ({
             )}
 
             <Caption1>
-              Selected: {selectedGroups.size} group(s)
+              Kijelölve: {selectedGroups.size} csoport
             </Caption1>
           </DialogContent>
           <DialogActions>
             <DialogTrigger disableButtonEnhancement>
               <Button appearance="secondary" icon={<Dismiss20Regular />} disabled={saving}>
-                Cancel
+                Mégse
               </Button>
             </DialogTrigger>
             <Button
@@ -290,7 +290,7 @@ export const GuestGroupAssignment = ({
               onClick={handleSave}
               disabled={saving || loading}
             >
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? 'Mentés...' : 'Változtatások mentése'}
             </Button>
           </DialogActions>
         </DialogBody>

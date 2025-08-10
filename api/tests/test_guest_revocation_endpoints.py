@@ -61,7 +61,9 @@ class TestRevocationEndpoints:
 
     @patch("api.routers.guests.get_current_user")
     @patch("api.routers.guests.get_db")
-    def test_revoke_guest_success(self, mock_get_db, mock_get_current_user, client, sample_guest, mock_current_user):
+    def test_revoke_guest_success(
+        self, mock_get_db, mock_get_current_user, client, sample_guest, mock_current_user
+    ):
         """Test successful guest revocation."""
         # Setup
         mock_get_current_user.return_value = mock_current_user
@@ -89,7 +91,9 @@ class TestRevocationEndpoints:
 
     @patch("api.routers.guests.get_current_user")
     @patch("api.routers.guests.get_db")
-    def test_revoke_guest_not_found(self, mock_get_db, mock_get_current_user, client, mock_current_user):
+    def test_revoke_guest_not_found(
+        self, mock_get_db, mock_get_current_user, client, mock_current_user
+    ):
         """Test revocation of non-existent guest."""
         # Setup
         mock_get_current_user.return_value = mock_current_user
@@ -112,7 +116,9 @@ class TestRevocationEndpoints:
 
     @patch("api.routers.guests.get_current_user")
     @patch("api.routers.guests.get_db")
-    def test_revoke_guest_idempotent(self, mock_get_db, mock_get_current_user, client, sample_guest, mock_current_user):
+    def test_revoke_guest_idempotent(
+        self, mock_get_db, mock_get_current_user, client, sample_guest, mock_current_user
+    ):
         """Test that revoking already revoked guest is idempotent."""
         # Setup
         sample_guest.status = GuestStatus.REVOKED.value
@@ -139,7 +145,9 @@ class TestRevocationEndpoints:
 
     @patch("api.routers.guests.get_current_user")
     @patch("api.routers.guests.get_db")
-    def test_bulk_revoke_success(self, mock_get_db, mock_get_current_user, client, mock_current_user):
+    def test_bulk_revoke_success(
+        self, mock_get_db, mock_get_current_user, client, mock_current_user
+    ):
         """Test successful bulk revocation."""
         # Setup
         mock_get_current_user.return_value = mock_current_user
@@ -153,7 +161,10 @@ class TestRevocationEndpoints:
             mock_service.bulk_revoke_guests = AsyncMock(
                 return_value={
                     "total": 3,
-                    "succeeded": [{"guest_id": str(gid), "email": f"guest{i}@example.com"} for i, gid in enumerate(guest_ids)],
+                    "succeeded": [
+                        {"guest_id": str(gid), "email": f"guest{i}@example.com"}
+                        for i, gid in enumerate(guest_ids)
+                    ],
                     "failed": [],
                     "correlation_id": "test-correlation",
                 }
@@ -179,7 +190,9 @@ class TestRevocationEndpoints:
 
     @patch("api.routers.guests.get_current_user")
     @patch("api.routers.guests.get_db")
-    def test_bulk_revoke_partial_failure(self, mock_get_db, mock_get_current_user, client, mock_current_user):
+    def test_bulk_revoke_partial_failure(
+        self, mock_get_db, mock_get_current_user, client, mock_current_user
+    ):
         """Test bulk revocation with partial failures."""
         # Setup
         mock_get_current_user.return_value = mock_current_user
@@ -221,7 +234,9 @@ class TestRevocationEndpoints:
 
     @patch("api.routers.guests.get_current_user")
     @patch("api.routers.guests.get_db")
-    def test_list_revoked_guests(self, mock_get_db, mock_get_current_user, client, mock_current_user, sample_partner):
+    def test_list_revoked_guests(
+        self, mock_get_db, mock_get_current_user, client, mock_current_user, sample_partner
+    ):
         """Test listing revoked guests."""
         # Setup
         mock_get_current_user.return_value = mock_current_user
@@ -261,7 +276,9 @@ class TestRevocationEndpoints:
 
     @patch("api.routers.guests.get_current_user")
     @patch("api.routers.guests.get_db")
-    def test_list_revoked_guests_with_filters(self, mock_get_db, mock_get_current_user, client, mock_current_user, sample_partner):
+    def test_list_revoked_guests_with_filters(
+        self, mock_get_db, mock_get_current_user, client, mock_current_user, sample_partner
+    ):
         """Test listing revoked guests with filters."""
         # Setup
         mock_get_current_user.return_value = mock_current_user
@@ -311,7 +328,9 @@ class TestRevocationEndpoints:
 
     @patch("api.routers.guests.get_current_user")
     @patch("api.routers.guests.get_db")
-    def test_list_revoked_guests_pagination(self, mock_get_db, mock_get_current_user, client, mock_current_user, sample_partner):
+    def test_list_revoked_guests_pagination(
+        self, mock_get_db, mock_get_current_user, client, mock_current_user, sample_partner
+    ):
         """Test pagination for revoked guests list."""
         # Setup
         mock_get_current_user.return_value = mock_current_user
@@ -362,7 +381,10 @@ class TestRevocationEndpoints:
         )
 
         # Should fail due to missing auth, but request body would be validated
-        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_422_UNPROCESSABLE_ENTITY]
+        assert response.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+        ]
 
     def test_bulk_revocation_request_validation(self, client):
         """Test that bulk revocation request validates properly."""
@@ -376,4 +398,7 @@ class TestRevocationEndpoints:
         )
 
         # Should fail due to missing auth or validation
-        assert response.status_code in [status.HTTP_401_UNAUTHORIZED, status.HTTP_422_UNPROCESSABLE_ENTITY]
+        assert response.status_code in [
+            status.HTTP_401_UNAUTHORIZED,
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+        ]

@@ -92,17 +92,17 @@ export const GuestInviteForm = ({ onSuccess, onCancel }: GuestInviteFormProps) =
     setSuccess(null);
 
     if (!validateEmail(formData.email)) {
-      setError('Please enter a valid email address');
+      setError('Kérjük, adjon meg egy érvényes email címet');
       return;
     }
 
     if (!formData.displayName.trim()) {
-      setError('Display name is required');
+      setError('A megjelenítendő név kötelező');
       return;
     }
 
     if (!formData.partnerCompanyId) {
-      setError('Please select a partner company');
+      setError('Kérjük, válasszon egy partner céget');
       return;
     }
 
@@ -118,7 +118,7 @@ export const GuestInviteForm = ({ onSuccess, onCancel }: GuestInviteFormProps) =
       });
 
       if (response.data) {
-        setSuccess(`Guest invitation sent successfully to ${formData.email}`);
+        setSuccess(`Vendég meghívó sikeresen elküldve ide: ${formData.email}`);
         setFormData({
           email: '',
           displayName: '',
@@ -132,7 +132,7 @@ export const GuestInviteForm = ({ onSuccess, onCancel }: GuestInviteFormProps) =
         }
       }
     } catch (err: unknown) {
-      const errorMessage = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to send guest invitation';
+      const errorMessage = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Nem sikerült elküldeni a vendég meghívót';
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -153,46 +153,46 @@ export const GuestInviteForm = ({ onSuccess, onCancel }: GuestInviteFormProps) =
       <CardHeader
         header={
           <Title3>
-            <PersonAdd20Regular /> Invite Guest User
+            <PersonAdd20Regular /> Vendég Felhasználó Meghívása
           </Title3>
         }
       />
       <form className={styles.form} onSubmit={handleSubmit}>
         <Field
-          label="Email Address"
+          label="Email Cím"
           required
           validationState={error && !validateEmail(formData.email) ? 'error' : undefined}
-          validationMessage={error && !validateEmail(formData.email) ? 'Invalid email format' : undefined}
+          validationMessage={error && !validateEmail(formData.email) ? 'Érvénytelen email formátum' : undefined}
         >
           <Input
             type="email"
             value={formData.email}
             onChange={(e, data) => handleInputChange('email', data.value)}
-            placeholder="guest@partner.com"
+            placeholder="vendeg@partner.com"
             contentBefore={<Mail20Regular />}
             disabled={isSubmitting}
             required
           />
         </Field>
 
-        <Field label="Display Name" required>
+        <Field label="Megjelenítendő Név" required>
           <Input
             value={formData.displayName}
             onChange={(e, data) => handleInputChange('displayName', data.value)}
-            placeholder="John Doe"
+            placeholder="Kovács János"
             contentBefore={<PersonAdd20Regular />}
             disabled={isSubmitting}
             required
           />
         </Field>
 
-        <Field label="Partner Company" required>
+        <Field label="Partner Cég" required>
           <Select
             value={formData.partnerCompanyId}
             onChange={(e, data) => handleInputChange('partnerCompanyId', data.value)}
             disabled={isSubmitting}
           >
-            <option value="">Select a partner company</option>
+            <option value="">Válasszon partner céget</option>
             {partners.map((partner) => (
               <option key={partner.id} value={partner.id}>
                 {partner.name}
@@ -201,24 +201,24 @@ export const GuestInviteForm = ({ onSuccess, onCancel }: GuestInviteFormProps) =
           </Select>
         </Field>
 
-        <Field label="Role" required>
+        <Field label="Szerepkör" required>
           <Select
             value={formData.role}
             onChange={(e, data) => handleInputChange('role', data.value)}
             disabled={isSubmitting}
           >
-            <option value="partner_viewer">Partner Viewer (Read-only)</option>
-            <option value="partner_expert">Partner Expert (Contributor)</option>
-            <option value="partner_admin">Partner Admin (Full access)</option>
-            <option value="neu_pm">NEÜ Project Manager</option>
+            <option value="partner_viewer">Partner Néző (Csak olvasás)</option>
+            <option value="partner_expert">Partner Szakértő (Közreműködő)</option>
+            <option value="partner_admin">Partner Adminisztrátor (Teljes hozzáférés)</option>
+            <option value="neu_pm">NEÜ Projektmenedzser</option>
           </Select>
         </Field>
 
-        <Field label="Custom Message (Optional)">
+        <Field label="Egyéni üzenet (Opcionális)">
           <Textarea
             value={formData.message}
             onChange={(e, data) => handleInputChange('message', data.value)}
-            placeholder="Add a personalized message to the invitation email..."
+            placeholder="Adjon hozzá egy személyre szabott üzenetet a meghívó emailhez..."
             rows={3}
             disabled={isSubmitting}
           />
@@ -227,7 +227,7 @@ export const GuestInviteForm = ({ onSuccess, onCancel }: GuestInviteFormProps) =
         {error && (
           <MessageBar intent="error" className={styles.errorMessage}>
             <MessageBarBody>
-              <MessageBarTitle>Error</MessageBarTitle>
+              <MessageBarTitle>Hiba</MessageBarTitle>
               {error}
             </MessageBarBody>
           </MessageBar>
@@ -236,7 +236,7 @@ export const GuestInviteForm = ({ onSuccess, onCancel }: GuestInviteFormProps) =
         {success && (
           <MessageBar intent="success" className={styles.successMessage}>
             <MessageBarBody>
-              <MessageBarTitle>Success</MessageBarTitle>
+              <MessageBarTitle>Sikeres</MessageBarTitle>
               {success}
             </MessageBarBody>
           </MessageBar>
@@ -245,7 +245,7 @@ export const GuestInviteForm = ({ onSuccess, onCancel }: GuestInviteFormProps) =
         <div className={styles.buttonGroup}>
           {onCancel && (
             <Button appearance="secondary" onClick={onCancel} disabled={isSubmitting}>
-              Cancel
+              Mégse
             </Button>
           )}
           <Button
@@ -254,7 +254,7 @@ export const GuestInviteForm = ({ onSuccess, onCancel }: GuestInviteFormProps) =
             disabled={isSubmitting || !formData.email || !formData.displayName || !formData.partnerCompanyId}
             icon={isSubmitting ? <Spinner size="tiny" /> : <PersonAdd20Regular />}
           >
-            {isSubmitting ? 'Sending Invitation...' : 'Send Invitation'}
+            {isSubmitting ? 'Meghívó küldése...' : 'Meghívó Küldése'}
           </Button>
         </div>
       </form>

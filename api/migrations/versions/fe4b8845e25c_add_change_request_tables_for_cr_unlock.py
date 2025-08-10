@@ -5,6 +5,7 @@ Revises: c3e034e43ebd
 Create Date: 2025-08-09 13:37:00.229182
 
 """
+
 from collections.abc import Sequence
 
 import sqlalchemy as sa
@@ -39,7 +40,7 @@ def upgrade() -> None:
         sa.Column("duration_hours", sa.Integer(), nullable=False, server_default="48"),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=True),
         sa.PrimaryKeyConstraint("id"),
-        sa.ForeignKeyConstraint(["em_id"], ["order_em.id"], ondelete="CASCADE")
+        sa.ForeignKeyConstraint(["em_id"], ["order_em.id"], ondelete="CASCADE"),
         # TODO: Re-enable FKs when user_account table is properly set up
         # sa.ForeignKeyConstraint(['created_by'], ['user_account.id']),
         # sa.ForeignKeyConstraint(['closed_by'], ['user_account.id'])

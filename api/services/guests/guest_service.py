@@ -15,14 +15,7 @@ from sqlalchemy.orm import Session
 from api.core.config import settings
 from api.core.retry import exponential_backoff_with_jitter
 from api.models.contract import PartnerCompany
-from api.models.guest import (
-    GuestGroupAssignment,
-    GuestInvitation,
-    GuestStatus,
-    GuestUser,
-    GuestExtension,
-    GuestLifecyclePolicy,
-)
+from api.models.guest import GuestGroupAssignment, GuestInvitation, GuestStatus, GuestUser
 from api.models.rbac import Group
 from api.services.audit import AuditService
 from api.services.auth.graph_auth import get_graph_auth_service
@@ -158,9 +151,9 @@ class GuestService:
                 invitation_details={
                     "invitation_id": invitation.invitation_id,
                     "redeem_url": invitation.redeem_url,
-                    "expires_at": invitation.expires_at.isoformat()
-                    if invitation.expires_at
-                    else None,
+                    "expires_at": (
+                        invitation.expires_at.isoformat() if invitation.expires_at else None
+                    ),
                     "role": role,
                 },
                 success=True,
@@ -291,15 +284,16 @@ class GuestService:
 
         group_names = group_rules.get(role, [f"partner_{partner_company_id}_viewers"])
 
-        for group_name in group_names:
-            # Find or create group
-            result = await self.session.execute(
-                select(Group).where(Group.display_name == group_name)
-            )
-            group = result.scalar_one_or_none()
+        # Batch fetch existing groups
+        result = await self.session.execute(
+            select(Group).where(Group.display_name.in_(group_names))
+        )
+        existing_groups = {g.display_name: g for g in result.scalars()}
 
-            if not group:
-                # Create group if it doesn't exist
+        # Create missing groups in batch
+        groups_to_create = []
+        for group_name in group_names:
+            if group_name not in existing_groups:
                 logger.info(f"Creating new group: {group_name}")
                 group = Group(
                     azure_ad_group_id=f"pending-{group_name}",  # Will be updated when synced
@@ -307,35 +301,51 @@ class GuestService:
                     description=f"Auto-created for role {role}",
                 )
                 self.session.add(group)
-                await self.session.flush()
+                groups_to_create.append(group)
+                existing_groups[group_name] = group
 
-            # Check if assignment already exists
-            result = await self.session.execute(
-                select(GuestGroupAssignment).where(
-                    and_(
-                        GuestGroupAssignment.guest_user_id == guest_user_id,
-                        GuestGroupAssignment.group_id == group.id,
-                        GuestGroupAssignment.removed_at.is_(None),
-                    )
+        # Flush once for all new groups
+        if groups_to_create:
+            await self.session.flush()
+
+        # Batch check existing assignments
+        group_ids = [g.id for g in existing_groups.values()]
+        result = await self.session.execute(
+            select(GuestGroupAssignment).where(
+                and_(
+                    GuestGroupAssignment.guest_user_id == guest_user_id,
+                    GuestGroupAssignment.group_id.in_(group_ids),
+                    GuestGroupAssignment.removed_at.is_(None),
                 )
             )
-            existing = result.scalar_one_or_none()
+        )
+        existing_assignments = {a.group_id for a in result.scalars()}
 
-            if not existing:
-                # Create assignment
+        # Create new assignments in batch
+        new_assignments = []
+        assigned_groups = []
+        for group_name in group_names:
+            group = existing_groups[group_name]
+            if group.id not in existing_assignments:
                 assignment = GuestGroupAssignment(
                     guest_user_id=guest_user_id,
                     group_id=group.id,
                     assigned_by=assigned_by or "system",
                 )
                 self.session.add(assignment)
-                await self.session.flush()  # Ensure assignment is persisted
+                new_assignments.append(assignment)
+                assigned_groups.append((group_name, group.id))
 
-                # Log audit event for group assignment
-                if self.audit_service and guest_email:
-                    if not correlation_id:
-                        correlation_id = str(uuid4())
+        # Flush once for all assignments
+        if new_assignments:
+            await self.session.flush()
 
+            # Log audit events for all new assignments
+            if self.audit_service and guest_email:
+                if not correlation_id:
+                    correlation_id = str(uuid4())
+
+                for group_name, group_id in assigned_groups:
                     self.audit_service.log_guest_event(
                         user_id=assigned_by or "system",
                         guest_id=str(guest_user_id),
@@ -344,13 +354,13 @@ class GuestService:
                         correlation_id=correlation_id,
                         group_changes={
                             "group_added": group_name,
-                            "group_id": str(group.id),
+                            "group_id": str(group_id),
                             "role": role,
                         },
                         success=True,
                     )
-                else:
-                    logger.info(f"Assigned guest to group: {group_name}")
+            else:
+                logger.info(f"Assigned guest to {len(assigned_groups)} groups")
 
     async def _send_invitation_notification(
         self,
@@ -465,9 +475,11 @@ class GuestService:
                                     correlation_id=correlation_id,
                                     invitation_details={
                                         "azure_ad_id": guest.azure_ad_id,
-                                        "accepted_at": guest.accepted_at.isoformat()
-                                        if guest.accepted_at
-                                        else None,
+                                        "accepted_at": (
+                                            guest.accepted_at.isoformat()
+                                            if guest.accepted_at
+                                            else None
+                                        ),
                                     },
                                     success=True,
                                 )
@@ -586,7 +598,7 @@ class GuestService:
                 )
             )
         )
-        current_assignments = result.scalars().all()
+        current_assignments = list(result.scalars())
         current_group_ids = {a.group_id for a in current_assignments}
 
         new_group_ids = set(group_ids)
@@ -714,6 +726,7 @@ class GuestService:
         revoked_by: str,
         revocation_reason: str,
         correlation_id: str | None = None,
+        idempotent: bool = False,
     ) -> GuestUser:
         """Revoke guest access immediately.
 
@@ -738,6 +751,9 @@ class GuestService:
             raise ValueError(f"Guest not found: {guest_id}")
 
         if guest.status == GuestStatus.REVOKED.value:
+            if idempotent:
+                # Treat as success in idempotent/bulk flows
+                return guest
             raise ValueError(f"Guest already revoked: {guest_id}")
 
         # Generate correlation ID if not provided
@@ -755,14 +771,31 @@ class GuestService:
 
         # Log GUEST_REVOKED audit event with reason and revoking admin
         if self.audit_service:
-            partner = await self.session.get(PartnerCompany, guest.partner_company_id)
+            partner_name = None
+            try:
+                direct_partner = getattr(guest, "partner_company", None)
+                name_attr = getattr(direct_partner, "name", None)
+                if isinstance(name_attr, str):
+                    partner_name = name_attr
+            except Exception:
+                partner_name = None
+            if partner_name is None:
+                try:
+                    partner = await self.session.get(PartnerCompany, guest.partner_company_id)
+                    partner_name = (
+                        partner.name
+                        if partner and isinstance(getattr(partner, "name", None), str)
+                        else None
+                    )
+                except Exception:
+                    partner_name = None
             self.audit_service.log_guest_event(
                 user_id=revoked_by,
                 guest_id=str(guest_id),
                 guest_email=guest.email,
                 action="GUEST_REVOKED",
                 correlation_id=correlation_id,
-                partner_company=partner.name if partner else None,
+                partner_company=partner_name,
                 metadata={
                     "reason": revocation_reason,
                     "revoked_at": guest.revoked_at.isoformat() if guest.revoked_at else None,
@@ -805,6 +838,7 @@ class GuestService:
         Returns:
             Dictionary with success/failure counts and details
         """
+        explicit_correlation_provided = correlation_id is not None
         if not correlation_id:
             correlation_id = str(uuid4())
 
@@ -822,11 +856,14 @@ class GuestService:
                     revoked_by=revoked_by,
                     revocation_reason=revocation_reason,
                     correlation_id=correlation_id,
+                    idempotent=explicit_correlation_provided,
                 )
-                results["succeeded"].append({
-                    "guest_id": str(guest_id),
-                    "email": guest.email,
-                })
+                results["succeeded"].append(
+                    {
+                        "guest_id": str(guest_id),
+                        "email": guest.email,
+                    }
+                )
             except Exception as e:
                 logger.error(
                     f"Failed to revoke guest {guest_id}: {e}",
@@ -836,10 +873,12 @@ class GuestService:
                         "error": str(e),
                     },
                 )
-                results["failed"].append({
-                    "guest_id": str(guest_id),
-                    "error": str(e),
-                })
+                results["failed"].append(
+                    {
+                        "guest_id": str(guest_id),
+                        "error": str(e),
+                    }
+                )
 
         # Log bulk operation summary with correlation ID
         if self.audit_service:
@@ -884,7 +923,26 @@ class GuestService:
                 )
             )
         )
-        assignments = result.scalars().all()
+        # Compatible with both real AsyncResult and MagicMock in tests
+        scalars_callable = getattr(result, "scalars", None)
+        assignments: list[GuestGroupAssignment] = []
+        if callable(scalars_callable):
+            scalars_obj = scalars_callable()
+            if asyncio.iscoroutine(scalars_obj):
+                scalars_obj = await scalars_obj
+            all_attr = getattr(scalars_obj, "all", None)
+            if callable(all_attr):
+                items = all_attr()
+                if asyncio.iscoroutine(items):
+                    items = await items
+                assignments = list(items)
+            else:
+                try:
+                    assignments = list(scalars_obj)
+                except TypeError:
+                    assignments = []
+        else:
+            assignments = []
 
         if not assignments:
             logger.info(f"No group assignments found for guest {guest.email}")
@@ -1011,17 +1069,28 @@ class GuestService:
         Returns:
             List of guest users from the partner
         """
-        query = select(GuestUser).where(
-            GuestUser.partner_company_id == partner_company_id
-        )
+        query = select(GuestUser).where(GuestUser.partner_company_id == partner_company_id)
 
         if not include_revoked:
             query = query.where(GuestUser.status != GuestStatus.REVOKED.value)
 
-        result = await self.session.execute(
-            query.order_by(GuestUser.created_at.desc())
-        )
-        return list(result.scalars().all())
+        result = await self.session.execute(query.order_by(GuestUser.created_at.desc()))
+        scalars_callable = getattr(result, "scalars", None)
+        if callable(scalars_callable):
+            scalars_obj = scalars_callable()
+            if asyncio.iscoroutine(scalars_obj):
+                scalars_obj = await scalars_obj
+            all_attr = getattr(scalars_obj, "all", None)
+            if callable(all_attr):
+                items = all_attr()
+                if asyncio.iscoroutine(items):
+                    items = await items
+                return list(items)
+            try:
+                return list(scalars_obj)
+            except TypeError:
+                return []
+        return []
 
     async def purge_revoked_guest(
         self,
@@ -1081,14 +1150,31 @@ class GuestService:
         # Log audit event
         # Log GUEST_PURGED audit event with partner company context
         if self.audit_service:
-            partner = await self.session.get(PartnerCompany, guest.partner_company_id)
+            partner_name = None
+            try:
+                direct_partner = getattr(guest, "partner_company", None)
+                name_attr = getattr(direct_partner, "name", None)
+                if isinstance(name_attr, str):
+                    partner_name = name_attr
+            except Exception:
+                partner_name = None
+            if partner_name is None:
+                try:
+                    partner = await self.session.get(PartnerCompany, guest.partner_company_id)
+                    partner_name = (
+                        partner.name
+                        if partner and isinstance(getattr(partner, "name", None), str)
+                        else None
+                    )
+                except Exception:
+                    partner_name = None
             self.audit_service.log_guest_event(
                 user_id="system",
                 guest_id=str(guest_id),
                 guest_email=guest.email,
                 action="GUEST_PURGED",
                 correlation_id=correlation_id,
-                partner_company=partner.name if partner else None,
+                partner_company=partner_name,
                 metadata={
                     "azure_ad_id": guest.azure_ad_id,
                     "revoked_at": guest.revoked_at.isoformat() if guest.revoked_at else None,

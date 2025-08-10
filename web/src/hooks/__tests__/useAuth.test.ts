@@ -15,6 +15,7 @@ vi.mock('@/config/auth.config', () => ({
     prompt: 'select_account',
   },
   apiScopes: ['User.Read'],
+  isE2EMode: vi.fn(() => false),
 }));
 
 import { useMsal } from '@azure/msal-react';

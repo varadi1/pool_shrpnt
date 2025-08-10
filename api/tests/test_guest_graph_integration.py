@@ -301,8 +301,12 @@ async def test_graph_api_group_assignment(db_session: AsyncSession):
     # Should contain at least these expected groups
     assert "partner_admins" in group_names
     # Check that a partner-specific admin group was created
-    partner_admin_groups = [name for name in group_names if "partner_" in name and "_admins" in name]
-    assert len(partner_admin_groups) >= 1, f"Expected at least one partner admin group, got {group_names}"
+    partner_admin_groups = [
+        name for name in group_names if "partner_" in name and "_admins" in name
+    ]
+    assert (
+        len(partner_admin_groups) >= 1
+    ), f"Expected at least one partner admin group, got {group_names}"
 
 
 @pytest.mark.asyncio

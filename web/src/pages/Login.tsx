@@ -34,7 +34,13 @@ export const Login = () => {
 
   const handleLogin = async () => {
     try {
+      console.log('Starting login process...');
       await login();
+      // In mock mode, login is instant, so navigate immediately
+      if (import.meta.env.VITE_USE_MOCK_AUTH === 'true') {
+        console.log('Mock auth enabled, redirecting to dashboard');
+        navigate('/dashboard', { replace: true });
+      }
     } catch (error) {
       console.error('Login error:', error);
     }
@@ -52,9 +58,20 @@ export const Login = () => {
     <div className={styles.container}>
       <Card className={styles.card}>
         <Title1>poolDRV</Title1>
-        <p>Sign in with your Microsoft account to continue</p>
+        {import.meta.env.VITE_USE_MOCK_AUTH === 'true' ? (
+          <>
+            <p style={{ color: 'orange', fontWeight: 'bold' }}>
+              ⚠️ Mock Authentication Mode
+            </p>
+            <p>Development mode - Click below to sign in as Test Admin</p>
+          </>
+        ) : (
+          <p>Sign in with your Microsoft account to continue</p>
+        )}
         <Button appearance="primary" onClick={handleLogin}>
-          Sign In with Microsoft
+          {import.meta.env.VITE_USE_MOCK_AUTH === 'true' 
+            ? 'Sign In (Mock Mode)' 
+            : 'Sign In with Microsoft'}
         </Button>
       </Card>
     </div>

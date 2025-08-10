@@ -75,13 +75,13 @@ const fetchDashboardMetrics = async (): Promise<DashboardMetrics> => {
   
   // Parallel API calls for better performance
   const [activeOrders, pendingOrders, failedOrders, activeContracts, locks, activeGuests, health] = await Promise.all([
-    apiClient.get('/api/v1/orders?status=active'),
-    apiClient.get('/api/v1/orders?status=pending_provision'),
-    apiClient.get('/api/v1/orders?status=failed&since=24h'),
-    apiClient.get('/api/v1/contracts?status=active'),
-    apiClient.get('/api/v1/locks/summary'),
-    apiClient.get('/api/v1/guests?status=active'),
-    apiClient.get('/health'),
+    apiClient.get('/api/orders?status=active'),
+    apiClient.get('/api/orders?status=pending_provision'),
+    apiClient.get('/api/orders?status=failed&since=24h'),
+    apiClient.get('/api/contracts?status=active'),
+    apiClient.get('/api/locks/summary'),
+    apiClient.get('/api/guests?status=active'),
+    apiClient.get('/api/health'),
   ]);
 
   const endTime = performance.now();
@@ -123,7 +123,7 @@ const fetchDashboardMetrics = async (): Promise<DashboardMetrics> => {
 };
 
 const fetchRecentActivity = async () => {
-  const result = await apiClient.get('/api/v1/audit/recent?limit=10');
+  const result = await apiClient.get('/api/audit/recent?limit=10');
   return result || [];
 };
 
@@ -163,21 +163,21 @@ export const Dashboard = () => {
   });
 
   return (
-    <div className={styles.container} role="region" aria-label="Dashboard">
+    <div className={styles.container} role="region" aria-label="Vezérlőpult">
       <div className={styles.header}>
-        <Title1 as="h1">Dashboard</Title1>
+        <Title1 as="h1">Vezérlőpult</Title1>
       </div>
 
-      <section className={styles.metricsGrid} aria-label="Key metrics" role="region">
+      <section className={styles.metricsGrid} aria-label="Fő mutatók" role="region">
         <MetricCard
-          title="Active Orders"
+          title="Aktív Megrendelések"
           value={metrics?.orders.active}
           icon={<ShoppingBag24Regular />}
           loading={metricsLoading}
           error={!!metricsError}
         />
         <MetricCard
-          title="Pending Provisions"
+          title="Függő Telepítések"
           value={metrics?.orders.pending}
           icon={<Clock24Regular />}
           loading={metricsLoading}
@@ -185,7 +185,7 @@ export const Dashboard = () => {
           status={metrics?.orders.pending && metrics.orders.pending > 5 ? 'warning' : 'normal'}
         />
         <MetricCard
-          title="Failed (24h)"
+          title="Sikertelen (24ó)"
           value={metrics?.orders.failed24h}
           icon={<ErrorCircle24Regular />}
           loading={metricsLoading}
@@ -193,47 +193,47 @@ export const Dashboard = () => {
           status={metrics?.orders.failed24h && metrics.orders.failed24h > 0 ? 'error' : 'success'}
         />
         <MetricCard
-          title="Active Contracts"
+          title="Aktív Szerződések"
           value={metrics?.contracts.active}
           icon={<Document24Regular />}
           loading={metricsLoading}
           error={!!metricsError}
         />
         <MetricCard
-          title="Time Locks"
+          title="Időzárak"
           value={metrics?.locks.timeLocked}
           icon={<LockClosed24Regular />}
           loading={metricsLoading}
           error={!!metricsError}
-          subtitle="Active time-based locks"
+          subtitle="Aktív időalapú zárolások"
         />
         <MetricCard
-          title="CR Unlocks"
+          title="CR Feloldások"
           value={metrics?.locks.crUnlocked}
           icon={<LockClosed24Regular />}
           loading={metricsLoading}
           error={!!metricsError}
-          subtitle="Active CR unlocks"
+          subtitle="Aktív CR feloldások"
         />
         <MetricCard
-          title="Active Guests"
+          title="Aktív Vendégek"
           value={metrics?.guests.active}
           icon={<People24Regular />}
           loading={metricsLoading}
           error={!!metricsError}
         />
         <MetricCard
-          title="Expiring Soon"
+          title="Hamarosan Lejár"
           value={metrics?.guests.expiring7d}
           icon={<People24Regular />}
           loading={metricsLoading}
           error={!!metricsError}
           status={metrics?.guests.expiring7d && metrics.guests.expiring7d > 0 ? 'warning' : 'normal'}
-          subtitle="Guests expiring in 7 days"
+          subtitle="7 napon belül lejáró vendégek"
         />
       </section>
 
-      <div className={styles.bottomGrid} role="region" aria-label="Activity and system status">
+      <div className={styles.bottomGrid} role="region" aria-label="Aktivitás és rendszerállapot">
         <ActivityFeed
           activities={activities}
           loading={activitiesLoading}
