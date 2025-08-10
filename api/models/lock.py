@@ -103,11 +103,12 @@ class LockState(Base):
     cr_reason = Column(Text)  # CR reason copied for quick reference
 
     # Relationships
+    # Use back_populates and string model names to avoid circular import on module load
+    # Match explicit primaryjoin on the other side to avoid FK requirement
     order_em = relationship(
         "OrderEm",
-        primaryjoin=lambda: foreign(LockState.order_em_id) == __import__(
-            "api.models.contract", fromlist=["contract"]
-        ).contract.OrderEm.id,
+        primaryjoin="LockState.order_em_id==OrderEm.id",
+        foreign_keys="LockState.order_em_id",
         viewonly=True,
     )
     locked_by_rule = relationship("LockRule")

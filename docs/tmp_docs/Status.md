@@ -230,6 +230,3 @@ python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 
 3. Cseréld ki az APP_SECRET_KEY értékét a generált kulcsra
 
-semmi@vm.hu;
-valamiq@vki.hu;
-valaha@vmi.hu

@@ -88,11 +88,12 @@ class OrderEm(Base):
     contract = relationship("Contract", back_populates="orders")
     partner_company = relationship("PartnerCompany", back_populates="orders")
     lock_rules = relationship("LockRule", back_populates="order_em", cascade="all, delete-orphan")
-    # View-only relationship to avoid FK enforcement in tests creating orphan LockState rows
-    from sqlalchemy.orm import foreign
+    # Bi-directional relationship resolved by string names to avoid circular imports
+    # Explicit join to avoid mapper init order issues
     lock_states = relationship(
         "LockState",
-        primaryjoin=lambda: foreign(__import__("api.models.lock", fromlist=["lock"]).lock.LockState.order_em_id) == OrderEm.id,
+        primaryjoin="OrderEm.id==LockState.order_em_id",
+        foreign_keys="LockState.order_em_id",
         viewonly=True,
     )
 
