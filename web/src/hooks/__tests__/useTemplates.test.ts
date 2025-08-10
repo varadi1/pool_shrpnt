@@ -3,7 +3,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
-  useTemplates,
+  useTemplatesList,
   useTemplate,
   useTemplateVersions,
   useCreateTemplate,
@@ -94,11 +94,11 @@ describe('useTemplates hooks', () => {
     vi.clearAllMocks();
   });
 
-  describe('useTemplates', () => {
+  describe('useTemplatesList', () => {
     it('should fetch templates list', async () => {
       vi.mocked(templateService.getTemplates).mockResolvedValue(mockTemplateList);
 
-      const { result } = renderHook(() => useTemplates(), {
+      const { result } = renderHook(() => useTemplatesList(), {
         wrapper: createWrapper(),
       });
 
@@ -117,7 +117,7 @@ describe('useTemplates hooks', () => {
       const sort = { field: 'name' as const, direction: 'asc' as const };
 
       const { result } = renderHook(
-        () => useTemplates(2, 10, filters, sort),
+        () => useTemplatesList(2, 10, filters, sort),
         { wrapper: createWrapper() }
       );
 

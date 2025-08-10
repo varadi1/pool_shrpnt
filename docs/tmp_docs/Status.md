@@ -1,12 +1,13 @@
 ---
-# /qa **[1]**
+# /qa **[]**
 
 [x] *review story 4.2 
 [x] *review story 5.2 
+[] user testing
 
 
 ---
-# /dev1 **[2]**
+# /dev1 **[1]**
 
 [x] *develop-story 5.2 task 1
 [x] *develop-story 5.2 task 2
@@ -28,11 +29,21 @@
 [x] *develop-story 5.3 task 5
 [x] *develop-story 5.3 task 6
 [x] *develop-story 5.3 task 7
-[-] *develop-story 5.3 task 8
-[] *develop-story 5.3 task 9
-[] *develop-story 5.3 task 10
-[] *develop-story 5.3 task 11
-[] *develop-story 5.3 task 12
+[x] *develop-story 5.3 task 8
+[x] *develop-story 5.3 task 9
+[x] *develop-story 5.3 task 10
+
+[x] *develop-story 5.5 task 1
+[x] *develop-story 5.5 task 2 véletlen a [3] csinálja nem a [2]
+[x] *develop-story 5.5 task 3
+[x] *develop-story 5.5 task 4
+[x] *develop-story 5.5 task 5
+[x] *develop-story 5.5 task 6
+[x] fixing errors
+[x] *develop-story 5.5 task 7
+[x] *develop-story 5.5 task 8
+[x] *develop-story 5.5 task 9 - waiting to start after limit liftet
+[x] *develop-story 5.5 task 10
 
 ---
 # /dev2 **[]**
@@ -44,7 +55,7 @@
 ---
 # /sm **[]**
 [x] create story 5.2.1 to create contracts page 
-
+[] draft
 
 ---
 # /po **[]**
@@ -54,7 +65,7 @@
 
 
 ---
-# /dev **[3]**
+# /dev **[2]**
 [x] *develop-story 5.2.1 task 1
 [x] *develop-story 5.2.1 task 2
 [x] *develop-story 5.2.1 task 3
@@ -66,35 +77,63 @@
 [x] *develop-story 5.2.1 task 9
 [x] *develop-story 5.2.1 task 10
 [x] fixing language and errors
-[-] *develop-story 5.2.1 task 11
-[] *develop-story 5.2.1 task 12
+[x] *develop-story 5.2.1 task 11
+[x] *develop-story 5.2.1 task 12
+[x] fixing Fluent UI DataGrid compatibility issues 
 
-[] *develop-story 5.4 task 1
-[] *develop-story 5.4 task 2
+[x] *develop-story 5.4 task 1
+[x] *develop-story 5.4 task 2
 [] fixing errors
-[] *develop-story 5.4 task 3
-[] *develop-story 5.4 task 4
-[] *develop-story 5.4 task 5
-[] *develop-story 5.4 task 6
-[] *develop-story 5.4 task 7
-[] *develop-story 5.4 task 8
-[] *develop-story 5.4 task 9
-[] *develop-story 5.4 task 10
+[x] *develop-story 5.4 task 3
+[x] *develop-story 5.4 task 4
+[x] *develop-story 5.4 task 5
+[x] *develop-story 5.4 task 6
+[x] *develop-story 5.4 task 7
+[x] *develop-story 5.4 task 8
+[x] *develop-story 5.4 task 9 we have to restart this after limits are lifted
+[x] *develop-story 5.4 task 10
 
+
+---
+/bmad-master **[1]**
+
+[-] fixing contract page issues
 
 ---
 ---
 # cursor
 /dev [1]
 
-[x] *run-tests story 5.2
+[x] *run-tests story 5.2 please make sure internal or local services, apis and functions are not mocked, but tested and corrected properly.
 [x] getting rid of sqlight
-[] *run-tests story 5.2.1
-[] *run-tests story 5.3
+[x] *run-tests story 5.2.1 please make sure internal or local services, apis and functions are not mocked, but tested and corrected properly. 
+[] *run-tests story 5.4 please make sure internal or local services, apis and functions are not mocked, but tested and corrected properly. Please also make sure there is no sqligth ever! we use postgresql, it is in the docker and we use only that for implementation and tests. 
+
+visszatérve a szerződések oldal szűrőire, a szabadszavas szűrő továbbra is gyorsan elveszti a fókuszt és akkor nem lehet tovább gépelni. A Lejárat dátuma-ig, a Lejárat dátumáig magyarul továbbra sem működik. Ez valami furát kereshet, mert csak olyan eredmény jön, ahol nincs érték megadva. 
 
 ---
 ---
+# DOCKER
 
+How to run (stop your local Vite on 3000 first):
+docker compose up -d postgres redis api worker scheduler
+docker compose up -d frontend
+Visit http://localhost:3000 and test API via fetch('/api/health')
+Prod override (static build):
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d frontend
+All YAML validated with docker compose config. No lints introduced.
+Extended docker-compose.yml with frontend and scheduler, and API healthcheck.
+Created docker-compose.prod.yml.
+
+**indítás/stop**
+Start all: ./scripts/start.sh
+Stop all: ./scripts/stop.sh
+
+
+
+
+
+---
 1. Backend szerver indítása
 
 # Navigálj a projekt gyökérkönyvtárába
@@ -190,3 +229,7 @@ cp .env.final .env
 python3 -c "import secrets; print(secrets.token_urlsafe(32))"
 
 3. Cseréld ki az APP_SECRET_KEY értékét a generált kulcsra
+
+semmi@vm.hu;
+valamiq@vki.hu;
+valaha@vmi.hu

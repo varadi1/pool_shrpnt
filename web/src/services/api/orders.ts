@@ -31,32 +31,32 @@ export interface AuditLogResponse {
 export const ordersApi = {
   // Create a new order
   create: async (data: OrderSubmissionPayload): Promise<OrderResponse> => {
-    const response = await apiClient.post('/api/orders', data);
-    return response.data;
+    const response = await apiClient.post<OrderResponse>('/api/orders', data);
+    return response as unknown as OrderResponse;
   },
 
   // Get order by ID
   getById: async (id: string): Promise<OrderResponse> => {
-    const response = await apiClient.get(`/api/orders/${id}`);
-    return response.data;
+    const response = await apiClient.get<OrderResponse>(`/api/orders/${id}`);
+    return response as unknown as OrderResponse;
   },
 
   // List all orders
   getAll: async (): Promise<OrderResponse[]> => {
-    const response = await apiClient.get('/api/orders');
-    return response.data;
+    const response = await apiClient.get<OrderResponse[]>('/api/orders');
+    return response as unknown as OrderResponse[];
   },
 
   // Trigger provisioning for an order
   provision: async (orderId: string): Promise<{ taskId: string; correlationId: string }> => {
-    const response = await apiClient.post(`/api/orders/${orderId}/provision`);
-    return response.data;
+    const response = await apiClient.post<{ taskId: string; correlationId: string }>(`/api/orders/${orderId}/provision`);
+    return response as { taskId: string; correlationId: string };
   },
 
   // Get provisioning status
   getProvisioningStatus: async (orderId: string): Promise<ProvisioningStatusResponse> => {
-    const response = await apiClient.get(`/api/orders/${orderId}/status`);
-    return response.data;
+    const response = await apiClient.get<ProvisioningStatusResponse>(`/api/orders/${orderId}/status`);
+    return response as ProvisioningStatusResponse;
   },
 
   // Save draft order to localStorage
@@ -97,14 +97,23 @@ export const ordersApi = {
 
   // Get next sequence number for order code generation
   getNextSequence: async (contractCode: string): Promise<number> => {
-    const response = await apiClient.get(`/api/orders/sequence/${contractCode}`);
-    return response.data.sequence;
+    // Development fallback: if endpoint is not available, return a safe default
+    try {
+      const response = await apiClient.get<{ sequence: number }>(`/api/orders/sequence/${contractCode}`);
+      return (response as { sequence: number }).sequence;
+    } catch (_e) {
+      // Avoid noisy console errors and unblock the flow in development
+      if (import.meta.env.DEV) {
+        return 1;
+      }
+      throw _e;
+    }
   },
 
   // Get order audit log
   getAuditLog: async (orderId: string): Promise<AuditLogResponse> => {
-    const response = await apiClient.get(`/api/orders/${orderId}/audit`);
-    return response.data;
+    const response = await apiClient.get<AuditLogResponse>(`/api/orders/${orderId}/audit`);
+    return response as AuditLogResponse;
   },
 };
 

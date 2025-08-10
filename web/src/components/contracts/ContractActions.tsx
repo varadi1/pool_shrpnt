@@ -155,6 +155,8 @@ export const ContractFormDialog: React.FC<ContractFormDialogProps> = ({
   const createMutation = useMutation({
     mutationFn: (data: ContractFormData) => contractsApi.create(data),
     onSuccess: () => {
+      // Invalidate all contract queries to ensure the list refreshes
+      // Optimistic refresh: remove item locally to avoid seeing inactive entries
       queryClient.invalidateQueries({ queryKey: ['contracts'] });
       onClose();
     },

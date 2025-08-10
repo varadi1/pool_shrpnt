@@ -11,12 +11,13 @@ import { TemplateEditor } from '@/pages/templates/TemplateEditor';
 import { Locks } from '@/pages/Locks';
 import { Settings } from '@/pages/Settings';
 import { Guests } from '@/pages/Guests';
+import { PermissionsList } from '@/pages/permissions/PermissionsList';
+import { PermissionMatrix } from '@/pages/permissions/PermissionMatrix';
+import { AuditList } from '@/pages/audit/AuditList';
 
 // Placeholder components for routes not yet implemented
 const Users = () => <div>Felhasználók és Csoportok (Hamarosan)</div>;
-const Permissions = () => <div>Jogosultságok (Hamarosan)</div>;
 const Reports = () => <div>Jelentések (Hamarosan)</div>;
-const Audit = () => <div>Audit Napló (Hamarosan)</div>;
 
 export const router = createBrowserRouter([
   {
@@ -126,8 +127,16 @@ export const router = createBrowserRouter([
       {
         path: '/permissions',
         element: (
-          <ProtectedRoute requiredRoles={['NEU_Admin']}>
-            <Permissions />
+          <ProtectedRoute requiredRoles={['NEU_Admin', 'NEU_PM']} requireAny={true}>
+            <PermissionsList />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: '/permissions/:orderId',
+        element: (
+          <ProtectedRoute requiredRoles={['NEU_Admin', 'NEU_PM']} requireAny={true}>
+            <PermissionMatrix />
           </ProtectedRoute>
         ),
       },
@@ -150,8 +159,8 @@ export const router = createBrowserRouter([
       {
         path: '/audit',
         element: (
-          <ProtectedRoute requiredRoles={['NEU_Admin']}>
-            <Audit />
+          <ProtectedRoute requiredRoles={['NEU_Admin', 'NEU_PM']} requireAny={true}>
+            <AuditList />
           </ProtectedRoute>
         ),
       },

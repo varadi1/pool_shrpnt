@@ -2,19 +2,18 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Contract Management', () => {
   test.beforeEach(async ({ page }) => {
-    // Navigate to the app
-    await page.goto('http://localhost:3000');
-    
-    // Wait for app to load
-    await page.waitForSelector('#root', { timeout: 10000 });
+    await page.goto('http://localhost:3000/login?e2e=1');
+    await page.getByRole('button', { name: /Sign In/ }).click();
+    // After mock login, we should be redirected to dashboard
+    await page.waitForURL(/.*dashboard.*/, { timeout: 15000 });
   });
 
   test('should create a new contract', async ({ page }) => {
     // Navigate to contracts page
     await page.goto('http://localhost:3000/contracts');
     
-    // Wait for contracts page to load
-    await page.waitForSelector('h1:has-text("Contracts")', { timeout: 10000 });
+    // Wait for contracts page to load (Hungarian title used in app)
+    await page.getByRole('heading', { name: 'Szerződések' }).waitFor({ timeout: 15000 });
     
     // Click on New Contract button
     await page.click('button:has-text("New Contract")');
@@ -52,8 +51,8 @@ test.describe('Contract Management', () => {
     // Navigate to contracts page
     await page.goto('http://localhost:3000/contracts');
     
-    // Wait for contracts page to load
-    await page.waitForSelector('h1:has-text("Contracts")', { timeout: 10000 });
+    // Wait for contracts page to load (Hungarian title used in app)
+    await page.getByRole('heading', { name: 'Szerződések' }).waitFor({ timeout: 15000 });
     
     // Check if the contracts table or list is visible
     const contractsContainer = page.locator('[data-testid="contracts-list"], table, .contracts-list');

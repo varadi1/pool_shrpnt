@@ -170,3 +170,47 @@ export interface MigrationResult {
   changes: MigrationStep[];
   errors?: string[];
 }
+
+export interface TemplateAnalytics {
+  usageMetrics: {
+    totalOrders: number;
+    activeOrders: number;
+    averageProvisionTime: number;
+    successRate: number;
+  };
+  adoptionMetrics: {
+    adoptionRate: number;
+    trendDirection: 'up' | 'down' | 'stable';
+    monthlyUsage: { month: string; count: number }[];
+  };
+  performanceMetrics: {
+    avgFolderCount: number;
+    avgDepth: number;
+    avgPermissionGroups: number;
+    provisioningErrors: { error: string; count: number }[];
+  };
+  orders?: TemplateUsageEntry[];
+  usageHeatMap?: number[][];
+}
+
+export interface TemplateUsageEntry {
+  orderId: string;
+  orderName: string;
+  templateVersion: string;
+  createdAt: Date;
+  status: 'active' | 'completed' | 'failed';
+}
+
+export interface PerformanceMetric {
+  name: string;
+  value: number;
+  unit: string;
+  trend: 'up' | 'down' | 'stable';
+  changePercent?: number;
+}
+
+export interface AnalyticsExportRequest {
+  templateId: string;
+  format: 'csv' | 'json' | 'pdf';
+  timeRange: string;
+}

@@ -6,6 +6,7 @@ import type {
   TemplateSortOptions,
   TemplateVersion,
   VersionTag,
+  AnalyticsExportRequest,
 } from '../types/templates';
 
 /**
@@ -28,7 +29,7 @@ export const templateKeys = {
 /**
  * Hook to fetch templates list with pagination
  */
-export function useTemplates(
+export function useTemplatesList(
   page: number = 1,
   pageSize: number = 20,
   filters?: TemplateFilters,
@@ -414,5 +415,127 @@ export function useInvalidateTemplates() {
       queryClient.invalidateQueries({ queryKey: templateKeys.detail(id) }),
     invalidateVersions: (id: string) =>
       queryClient.invalidateQueries({ queryKey: templateKeys.versions(id) }),
+  };
+}
+
+/**
+ * Hook to fetch template analytics
+ */
+export function useTemplateAnalytics(templateId: string, timeRange?: string) {
+  return useQuery({
+    queryKey: ['templates', 'analytics', templateId, timeRange],
+    queryFn: () => templateService.getAnalytics(templateId, timeRange),
+    staleTime: 60000, // 1 minute
+  });
+}
+
+/**
+ * Hook to export analytics
+ */
+export function useExportAnalytics() {
+  return useMutation({
+    mutationFn: async (request: AnalyticsExportRequest) => {
+      const blob = await templateService.exportAnalytics(request);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      const timestamp = new Date().toISOString().split('T')[0];
+      const extension = request.format === 'pdf' ? 'pdf' : request.format === 'json' ? 'json' : 'csv';
+      link.download = `template-analytics-${request.templateId}-${timestamp}.${extension}`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      window.URL.revokeObjectURL(url);
+    },
+  });
+}
+
+/**
+ * Hook to fetch usage statistics
+ */
+export function useUsageStatistics(templateId: string) {
+  return useQuery({
+    queryKey: ['templates', 'usage-statistics', templateId],
+    queryFn: () => templateService.getUsageStatistics(templateId),
+    staleTime: 60000, // 1 minute
+  });
+}
+
+/**
+ * Hook to fetch adoption trends
+ */
+export function useAdoptionTrends(templateId: string, period: '7d' | '30d' | '90d' | '1y') {
+  return useQuery({
+    queryKey: ['templates', 'adoption-trends', templateId, period],
+    queryFn: () => templateService.getAdoptionTrends(templateId, period),
+    staleTime: 60000, // 1 minute
+  });
+}
+
+/**
+ * Hook to fetch performance metrics
+ */
+export function usePerformanceMetrics(templateId: string) {
+  return useQuery({
+    queryKey: ['templates', 'performance-metrics', templateId],
+    queryFn: () => templateService.getPerformanceMetrics(templateId),
+    staleTime: 60000, // 1 minute
+  });
+}
+
+/**
+ * Hook to fetch usage heat map
+ */
+export function useUsageHeatMap(templateId: string, granularity: 'daily' | 'weekly' | 'monthly') {
+  return useQuery({
+    queryKey: ['templates', 'usage-heatmap', templateId, granularity],
+    queryFn: () => templateService.getUsageHeatMap(templateId, granularity),
+    staleTime: 60000, // 1 minute
+  });
+}
+
+/**
+ * Combined hook for all template operations including analytics
+ */
+export function useTemplates() {
+  const queryClient = useQueryClient();
+  
+  return {
+    // Query hooks
+    templates: useTemplatesList(),
+    template: useTemplate,
+    versions: useTemplateVersions,
+    versionUsage: useVersionUsage,
+    analytics: {
+      data: queryClient.getQueryData(['templates', 'analytics']),
+      useAnalytics: useTemplateAnalytics,
+      useStatistics: useUsageStatistics,
+      useTrends: useAdoptionTrends,
+      useMetrics: usePerformanceMetrics,
+      useHeatMap: useUsageHeatMap,
+    },
+    
+    // Mutation hooks
+    createTemplate: useCreateTemplate(),
+    updateTemplate: useUpdateTemplate(),
+    deleteTemplate: useDeleteTemplate(),
+    rollbackTemplate: useRollbackTemplate(),
+    validateTemplate: useValidateTemplate(),
+    updateVersionChangelog: useUpdateVersionChangelog(),
+    updateVersionTags: useUpdateVersionTags(),
+    exportAnalytics: useExportAnalytics(),
+    
+    // Utility hooks
+    prefetch: usePrefetchTemplate(),
+    invalidate: useInvalidateTemplates(),
+    
+    // Loading states
+    isLoadingAnalytics: false, // Will be set by actual query
+    analyticsError: null as Error | null, // Will be set by actual query
   };
 }

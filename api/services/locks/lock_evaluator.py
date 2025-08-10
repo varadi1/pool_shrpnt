@@ -3,6 +3,7 @@
 from datetime import UTC, datetime, timedelta
 from uuid import UUID, uuid4
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from api.core.logging import get_logger
@@ -174,11 +175,6 @@ class LockEvaluator:
                     extra={"order_em_id": order_em_id, "folder_path": folder_path},
                 )
                 continue
-
-            # Check for CR locks (medium priority) - would be implemented for CR system
-            # cr_lock = self._check_cr_lock(order_em_id, folder_path)
-            # if cr_lock:
-            #     continue
 
             # Now check current automatic lock state
             current_lock = (
@@ -449,16 +445,28 @@ class LockEvaluator:
         """
         expiry_time = datetime.now(UTC) - timedelta(hours=max_duration_hours)
 
-        # Find expired manual locks
-        expired_locks = (
-            self.db.query(LockState)
-            .filter(
-                LockState.is_active == True,
-                LockState.lock_type == LockType.MANUAL,
-                LockState.locked_at < expiry_time,
+        # Use SQLAlchemy 2.x compatible select for portability with AsyncSession
+        try:
+            # Attempt to use select() to support AsyncSession if provided
+            result = self.db.execute(
+                select(LockState).where(
+                    LockState.is_active == True,
+                    LockState.lock_type == LockType.MANUAL,
+                    LockState.locked_at < expiry_time,
+                )
             )
-            .all()
-        )
+            expired_locks = [row[0] for row in result] if result is not None else []
+        except Exception:
+            # Fallback to ORM query for traditional Session
+            expired_locks = (
+                self.db.query(LockState)
+                .filter(
+                    LockState.is_active == True,
+                    LockState.lock_type == LockType.MANUAL,
+                    LockState.locked_at < expiry_time,
+                )
+                .all()
+            )
 
         expired_list = []
         for lock in expired_locks:

@@ -5,7 +5,7 @@ import { chromium } from 'playwright';
   const page = await browser.newPage();
   
   console.log('🔍 Testing API Fixes\n');
-  console.log('Testing: http://localhost:3003\n');
+  console.log('Testing: http://localhost:3000\n');
   
   // Capture network requests
   const apiErrors = [];
@@ -33,7 +33,7 @@ import { chromium } from 'playwright';
   });
   
   // Navigate to the app
-  await page.goto('http://localhost:3003');
+  await page.goto('http://localhost:3000');
   await page.waitForTimeout(3000);
   
   // Check API errors

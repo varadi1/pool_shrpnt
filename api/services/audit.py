@@ -50,26 +50,25 @@ class AuditService:
         ip_address: str | None = None,
         user_agent: str | None = None,
         metadata: dict[str, Any] | None = None,
+        extra_metadata: dict[str, Any] | None = None,
     ) -> AuditLog:
         """Log an audit event to the database.
 
         Args:
             user_id: ID of the user performing the action
-            action: Action being performed (e.g., 'create_contract', 'provision_order')
-            entity_type: Type of entity (e.g., 'contract', 'order', 'job')
+            action: Action being performed
+            entity_type: Type of entity
             entity_id: ID of the entity
             correlation_id: Correlation ID for request tracing
             before_state: State before the change
             after_state: State after the change
             success: Whether the action was successful
             error_message: Error message if action failed
-            duration_ms: Duration of the operation in milliseconds
+            duration_ms: Duration of the operation
             ip_address: IP address of the request
             user_agent: User agent string
-            metadata: Additional metadata
-
-        Returns:
-            Created audit log entry
+            metadata: Additional metadata (stored in metadata column)
+            extra_metadata: Additional metadata (stored in extra_metadata column)
         """
         # Calculate changes if both states provided
         changes = None
@@ -90,9 +89,14 @@ class AuditService:
             duration_ms=duration_ms,
             ip_address=ip_address,
             user_agent=user_agent,
-            extra_metadata=metadata,
+            extra_metadata=extra_metadata or metadata,
+            # Ensure naive UTC timestamp to align with tests
             timestamp=datetime.utcnow(),
         )
+
+        # If metadata provided, also populate the dedicated metadata_json column
+        if metadata:
+            setattr(audit_entry, "metadata_json", metadata)
 
         self.session.add(audit_entry)
         self.session.commit()
@@ -110,21 +114,9 @@ class AuditService:
 
         return audit_entry
 
-    def _calculate_changes(
-        self, before_state: dict[str, Any], after_state: dict[str, Any]
-    ) -> dict[str, Any]:
-        """Calculate what changed between two states.
-
-        Args:
-            before_state: State before change
-            after_state: State after change
-
-        Returns:
-            Dictionary of changes
-        """
+    def _calculate_changes(self, before_state: dict[str, Any], after_state: dict[str, Any]) -> dict[str, Any]:
         changes = {}
 
-        # Find modified fields
         for key in after_state:
             if key in before_state:
                 if before_state[key] != after_state[key]:
@@ -138,7 +130,6 @@ class AuditService:
                     "after": after_state[key],
                 }
 
-        # Find removed fields
         for key in before_state:
             if key not in after_state:
                 changes[key] = {

@@ -29,7 +29,7 @@ const renderContractFilters = (props = {}) => {
   );
 };
 
-describe.skip('ContractFilters', () => {
+describe('ContractFilters', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();

@@ -77,11 +77,17 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
   }, [contractNumber]);
 
   const generateOrderCode = async (contractCode: string) => {
-    const year = new Date().getFullYear();
-    const sequence = await getNextSequence(contractCode);
-    const code = `EM-${year}-${contractCode}-${sequence.toString().padStart(3, '0')}`;
-    setOrderCode(code);
-    updateParent({ orderCode: code });
+    try {
+      const year = new Date().getFullYear();
+      const sequence = await getNextSequence(contractCode);
+      const code = `EM-${year}-${contractCode}-${sequence.toString().padStart(3, '0')}`;
+      setOrderCode(code);
+      updateParent({ orderCode: code });
+    } catch (_e) {
+      // If sequence endpoint is not available, don't block the flow
+      setOrderCode('will be generated');
+      updateParent({ orderCode: undefined });
+    }
   };
 
   const updateParent = (updates: any) => {
@@ -134,47 +140,47 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
 
   return (
     <div className={styles.container}>
-      <Field label="Order Code" required>
+      <Field label="Megrendelés kódja">
         <div className={styles.codePreview}>
-          {orderCode || 'Code will be generated automatically'}
+          {orderCode || 'A kód automatikusan generálódik'}
         </div>
         <div className={styles.infoText}>
           <InfoRegular />
-          <Text>Format: EM-YEAR-CONTRACT-SEQUENCE</Text>
+          <Text>Formátum: EM-ÉV-SZERZŐDÉS-SORSZÁM</Text>
         </div>
       </Field>
 
       <Field 
-        label="Order Name" 
+        label="Megrendelés neve" 
         required 
         validationMessage={
           !orderName
-            ? 'Order name is required'
+            ? 'A megrendelés neve kötelező'
             : orderName.length < 3
-              ? 'Order name must be at least 3 characters'
+              ? 'A megrendelés neve legalább 3 karakter'
               : undefined
         }
         validationState={orderName && orderName.length < 3 ? 'error' : undefined}
       >
         <Input
-          aria-label="Order Name"
+          aria-label="Megrendelés neve"
           value={orderName}
           onChange={handleNameChange}
-          placeholder="Enter order name"
+          placeholder="Add meg a megrendelés nevét"
         />
       </Field>
 
-      <Field label="Description" className={styles.fullWidth}>
+      <Field label="Leírás" className={styles.fullWidth}>
         <Textarea
           value={description}
           onChange={handleDescriptionChange}
-          placeholder="Enter order description (optional)"
+          placeholder="Rövid leírás (opcionális)"
           rows={3}
         />
       </Field>
 
       <div className={styles.row}>
-        <Field label="Start Date" required>
+        <Field label="Kezdő dátum" required>
           <Input
             type="date"
             value={startDate ? startDate.toISOString().split('T')[0] : ''}
@@ -184,9 +190,8 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
         </Field>
 
         <Field 
-          label="End Date" 
-          required 
-          validationMessage={dateError || (!endDate ? 'End date is required' : undefined)}
+          label="Vég dátum" 
+          validationMessage={dateError || undefined}
           validationState={dateError ? 'error' : undefined}
         >
           <Input
@@ -199,15 +204,15 @@ export const OrderDetailsForm: React.FC<OrderDetailsFormProps> = ({
         </Field>
       </div>
 
-      <Field label="Order Type">
+      <Field label="Megrendelés típusa">
         <Dropdown
-          value={orderType === 'standard' ? 'Standard' : orderType === 'urgent' ? 'Urgent' : 'Special'}
+          value={orderType === 'standard' ? 'Standard' : orderType === 'urgent' ? 'Sürgős' : 'Speciális'}
           selectedOptions={[orderType]}
           onOptionSelect={handleOrderTypeChange}
         >
           <Option value="standard">Standard</Option>
-          <Option value="urgent">Urgent</Option>
-          <Option value="special">Special</Option>
+          <Option value="urgent">Sürgős</Option>
+          <Option value="special">Speciális</Option>
         </Dropdown>
       </Field>
     </div>

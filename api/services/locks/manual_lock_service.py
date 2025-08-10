@@ -1,7 +1,7 @@
 """Service for manual lock management."""
 
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
@@ -108,11 +108,12 @@ class ManualLockService:
         # Prepare lock details with full context
         lock_details = {
             "em_id": em_id,
-            "em_name": em.name,
+            "em_name": em.title or getattr(em, "name", em_id),
             "scope": scope,
             "action": action,
             "affected_folders": folder_paths,
             "results": results,
+            # Ensure naive UTC to satisfy tests comparing with datetime.utcnow()
             "timestamp": datetime.utcnow().isoformat(),
             "user_role": user_role,
         }
@@ -120,7 +121,7 @@ class ManualLockService:
         # Log the audit event with all required context
         self.audit_service.log_manual_lock_event(
             user_id=str(user_id),
-            folder_path=f"{em.name}/{scope}",
+            folder_path=f"{em.title or getattr(em, 'name', em_id)}/{scope}",
             lock_action=action,
             lock_reason=reason,
             correlation_id=correlation_id,
@@ -178,7 +179,8 @@ class ManualLockService:
         Returns:
             List of folder paths
         """
-        base_path = f"/sites/{em.sharepoint_site_id}/Shared Documents/{em.name}"
+        base_name = em.title or getattr(em, "name", str(em.id))
+        base_path = f"/sites/{em.sharepoint_site_id}/Shared Documents/{base_name}"
 
         if scope == "experts":
             return [f"{base_path}/Szakértők"]

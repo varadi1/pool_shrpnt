@@ -28,7 +28,7 @@ class TestAuditLogging:
         service = ManualLockService(db_session)
         em = OrderEm(
             id=1,
-            name="EM-2025-001",
+            title="EM-2025-001",
             sharepoint_site_id="site123",
         )
         db_session.add(em)
@@ -71,7 +71,7 @@ class TestAuditLogging:
         service = ManualLockService(db_session)
         em = OrderEm(
             id=1,
-            name="EM-2025-001",
+            title="EM-2025-001",
             sharepoint_site_id="site123",
         )
         db_session.add(em)
@@ -124,7 +124,7 @@ class TestAuditLogging:
         service = ManualLockService(db_session)
         em = OrderEm(
             id=1,
-            name="EM-2025-001",
+            title="EM-2025-001",
             sharepoint_site_id="site123",
         )
         db_session.add(em)
@@ -159,7 +159,7 @@ class TestAuditLogging:
         service = ManualLockService(db_session)
         em = OrderEm(
             id=1,
-            name="EM-2025-001",
+            title="EM-2025-001",
             sharepoint_site_id="site123",
         )
         db_session.add(em)
@@ -209,7 +209,7 @@ class TestLockPriorityEvaluation:
         evaluator = LockEvaluator(db_session)
 
         # Create order with lock rule
-        em = OrderEm(id=1, name="EM-2025-001")
+        em = OrderEm(id=1, title="EM-2025-001")
         db_session.add(em)
 
         # Create manual lock
@@ -241,6 +241,11 @@ class TestLockPriorityEvaluation:
         """Test that priority is: Manual > CR > Automatic."""
         # Arrange
         service = ManualLockService(db_session)
+
+        # Ensure EM for FK
+        em = OrderEm(id=1, title="EM-2025-001")
+        db_session.add(em)
+        db_session.commit()
 
         # Act
         priority = service.check_lock_priority(
@@ -288,7 +293,7 @@ class TestLockPriorityEvaluation:
         service = ManualLockService(db_session)
         em = OrderEm(
             id=1,
-            name="EM-2025-001",
+            title="EM-2025-001",
             sharepoint_site_id="site123",
         )
         db_session.add(em)
@@ -318,6 +323,11 @@ class TestLockPriorityEvaluation:
         """Test that expired manual locks are handled correctly."""
         # Arrange
         evaluator = LockEvaluator(db_session)
+
+        # Ensure EM for FK
+        em = OrderEm(id=1, title="EM-2025-001")
+        db_session.add(em)
+        db_session.commit()
 
         # Create expired manual lock (50 hours old)
         old_time = datetime.now(UTC) - timedelta(hours=50)
@@ -356,7 +366,7 @@ class TestNotificationTriggers:
         service = ManualLockService(db_session)
         em = OrderEm(
             id=1,
-            name="EM-2025-001",
+            title="EM-2025-001",
             sharepoint_site_id="site123",
         )
         db_session.add(em)
@@ -386,7 +396,7 @@ class TestNotificationTriggers:
         service = ManualLockService(db_session)
         em = OrderEm(
             id=1,
-            name="EM-2025-001",
+            title="EM-2025-001",
             sharepoint_site_id="site123",
         )
         db_session.add(em)
@@ -422,7 +432,7 @@ class TestNotificationTriggers:
         service = ManualLockService(db_session)
         em = OrderEm(
             id=1,
-            name="EM-2025-001",
+            title="EM-2025-001",
             sharepoint_site_id="site123",
         )
         db_session.add(em)
@@ -458,7 +468,7 @@ class TestIntegrationScenarios:
         service = ManualLockService(db_session)
         em = OrderEm(
             id=1,
-            name="EM-2025-001",
+            title="EM-2025-001",
             sharepoint_site_id="site123",
         )
         db_session.add(em)
@@ -515,7 +525,7 @@ class TestIntegrationScenarios:
         evaluator = LockEvaluator(db_session)
         service = ManualLockService(db_session)
 
-        em = OrderEm(id=1, name="EM-2025-001", sharepoint_site_id="site123")
+        em = OrderEm(id=1, title="EM-2025-001", sharepoint_site_id="site123")
         db_session.add(em)
 
         # Create automatic lock first

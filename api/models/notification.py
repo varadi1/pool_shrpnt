@@ -51,6 +51,10 @@ class NotificationQueue(Base):
     retry_count = Column(Integer, server_default="0")
     created_at = Column(DateTime(timezone=True), server_default=text("CURRENT_TIMESTAMP"))
 
+    # Fields used by tests for event-driven notifications
+    event_type = Column(String(100))
+    event_data = Column(JSON)
+
     # Relationships
     template = relationship("NotificationTemplate", back_populates="queue_items")
 

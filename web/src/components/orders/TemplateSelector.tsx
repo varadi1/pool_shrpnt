@@ -98,12 +98,24 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   // Preview UI removed for testing stability
 
   // TODO: Replace with real API call when backend is ready
-  const { data: templates, isLoading, error } = useQuery<Template[]>({
+  const { data: templatesData, isLoading, error } = useQuery<Template[]>({
     queryKey: ['templates'],
-    queryFn: async () => getTemplates(),
+    queryFn: async () => {
+      try {
+        const result = await getTemplates();
+        // Ensure we always have an array
+        return Array.isArray(result) ? result : [];
+      } catch (err) {
+        console.error('Failed to fetch templates:', err);
+        return [];
+      }
+    },
     staleTime: 0,
     gcTime: 0,
   });
+  
+  // Ensure templates is always an array
+  const templates = Array.isArray(templatesData) ? templatesData : [];
 
   const handleTemplateSelect = (template: Template) => {
     setSelectedTemplate(template);
@@ -136,7 +148,7 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
   };
 
   const getRecommendedTemplate = () => {
-    if (!templates || !contractType) return null;
+    if (!templates || templates.length === 0 || !contractType) return null;
     // Simple recommendation logic based on contract type
     return templates.find(t => 
       t.tags?.includes(contractType.toLowerCase()) || 
@@ -164,62 +176,68 @@ export const TemplateSelector: React.FC<TemplateSelectorProps> = ({
 
   return (
     <div className={styles.container}>
-      <Text weight="semibold">Select a Template</Text>
+      <Text weight="semibold">Válasszon sablont</Text>
       
-      <div className={styles.grid}>
-        {templates?.map((template) => {
-          const isSelected = value === template.id || selectedTemplate?.id === template.id;
-          const isRecommended = recommendedTemplate?.id === template.id;
-          
-          return (
-            <Card
-              key={template.id}
-              className={`${styles.card} ${isSelected ? styles.selectedCard : ''}`}
-              onClick={() => handleTemplateSelect(template)}
-              data-testid={`template-card-${template.id}`}
-            >
-              <CardHeader
-                header={
-                  <div className={styles.cardHeader}>
-                    <Text weight="semibold">{template.name}</Text>
-                    {isSelected && <CheckmarkCircleRegular />}
-                  </div>
-                }
-                description={`Version ${template.version}`}
-              />
-              <div className={styles.cardBody}>
-                {isRecommended && (
-                  <Badge 
-                    appearance="filled" 
-                    className={styles.recommendedBadge}
-                    style={{ marginBottom: '8px' }}
-                  >
-                    Recommended
-                  </Badge>
-                )}
-                
-                  <Text size={200}>{template.description}</Text>
-                
-                <div className={styles.metadata}>
-                  <Badge appearance="outline" icon={<InfoRegular />}>
-                    {template.folders.length} folders
-                  </Badge>
-                   <Badge appearance="outline" icon={<HistoryRegular />}>
-                     Used {template.metadata?.usageCount ?? 0} times
-                   </Badge>
-                   {template.metadata?.lastUsed && (
-                    <Badge appearance="outline">
-                       Last: {new Date(template.metadata!.lastUsed).toLocaleDateString()}
+      {templates.length === 0 ? (
+        <div style={{ padding: '20px', textAlign: 'center' }}>
+          <Text>Nincs elérhető sablon. A folytatáshoz kattintson a Következő gombra.</Text>
+        </div>
+      ) : (
+        <div className={styles.grid}>
+          {templates.map((template) => {
+            const isSelected = value === template.id || selectedTemplate?.id === template.id;
+            const isRecommended = recommendedTemplate?.id === template.id;
+            
+            return (
+              <Card
+                key={template.id}
+                className={`${styles.card} ${isSelected ? styles.selectedCard : ''}`}
+                onClick={() => handleTemplateSelect(template)}
+                data-testid={`template-card-${template.id}`}
+              >
+                <CardHeader
+                  header={
+                    <div className={styles.cardHeader}>
+                      <Text weight="semibold">{template.name}</Text>
+                      {isSelected && <CheckmarkCircleRegular />}
+                    </div>
+                  }
+                  description={`Verzió ${template.version}`}
+                />
+                <div className={styles.cardBody}>
+                  {isRecommended && (
+                    <Badge 
+                      appearance="filled" 
+                      className={styles.recommendedBadge}
+                      style={{ marginBottom: '8px' }}
+                    >
+                      Ajánlott
                     </Badge>
                   )}
-                </div>
+                  
+                  <Text size={200}>{template.description}</Text>
+                  
+                  <div className={styles.metadata}>
+                    <Badge appearance="outline" icon={<InfoRegular />}>
+                      {template.folders.length} mappa
+                    </Badge>
+                    <Badge appearance="outline" icon={<HistoryRegular />}>
+                      Használva: {template.metadata?.usageCount ?? 0} alkalommal
+                    </Badge>
+                    {template.metadata?.lastUsed && (
+                      <Badge appearance="outline">
+                        Utoljára: {new Date(template.metadata!.lastUsed).toLocaleDateString('hu-HU')}
+                      </Badge>
+                    )}
+                  </div>
 
-                {/* Preview removed */}
-              </div>
-            </Card>
-          );
-        })}
-      </div>
+                  {/* Preview removed */}
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 };

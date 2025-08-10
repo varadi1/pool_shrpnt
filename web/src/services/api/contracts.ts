@@ -20,7 +20,7 @@ export const contractsApi = {
       ...filters,
     });
     const response = await apiClient.get<ContractListResponse>(`/api/contracts?${params}`);
-    return transformContractList(response.data);
+    return transformContractList(response);
   },
 
   // Convenience API used by tests
@@ -32,7 +32,7 @@ export const contractsApi = {
   // Get a single contract by ID
   getById: async (id: string | number): Promise<Contract> => {
     const response = await apiClient.get<ContractResponse>(`/api/contracts/${id}`);
-    return transformContract(response.data);
+    return transformContract(response);
   },
 
   // Create a new contract (Admin only)
@@ -48,13 +48,13 @@ export const contractsApi = {
     };
     const response = await apiClient.post<ContractResponse>('/api/contracts', payload);
     
-    // Check if response data exists
-    if (!response.data) {
+    // Check if response exists (apiClient.post already returns just the data)
+    if (!response) {
       console.error('Contract create response has no data:', response);
       throw new Error('Invalid response from server - no data returned');
     }
     
-    return transformContract(response.data);
+    return transformContract(response);
   },
 
   // Update an existing contract (Admin only)
@@ -63,12 +63,15 @@ export const contractsApi = {
     // Only include fields that can be updated according to ContractUpdate schema
     if (data.name) payload.name = data.name;
     if (data.description !== undefined) payload.description = data.description;
-    if (data.endDate !== undefined) payload.end_date = data.endDate;
+    if (data.endDate !== undefined) {
+      // Treat empty string as null (clear end date) instead of sending ""
+      payload.end_date = data.endDate === '' ? null : data.endDate;
+    }
     if (data.totalValue !== undefined) payload.total_value = data.totalValue;
     if (data.status) payload.status = data.status;
     
     const response = await apiClient.patch<ContractResponse>(`/api/contracts/${id}`, payload);
-    return transformContract(response.data);
+    return transformContract(response);
   },
 
   // Delete a contract (Admin only)
@@ -84,7 +87,7 @@ export const contractsApi = {
       page_size: pageSize.toString(),
     });
     const response = await apiClient.get<ContractListResponse>(`/api/contracts?${params}`);
-    return transformContractList(response.data);
+    return transformContractList(response);
   },
 
   // Get active contracts only with pagination
@@ -95,7 +98,7 @@ export const contractsApi = {
       page_size: pageSize.toString(),
     });
     const response = await apiClient.get<ContractListResponse>(`/api/contracts?${params}`);
-    return transformContractList(response.data);
+    return transformContractList(response);
   },
 
   // Export contracts to CSV

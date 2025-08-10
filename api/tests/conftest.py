@@ -14,10 +14,10 @@ from api.main import app as fastapi_app
 
 # Get PostgreSQL test database URL from environment or use default
 TEST_DATABASE_URL = os.getenv(
-    "TEST_DATABASE_URL", "postgresql://pooldrv:pooldrv@localhost:5432/pooldb_test"
+    "TEST_DATABASE_URL", "postgresql://pooldrv:pooldrv@postgres:5432/pooldb_test"
 )
 ASYNC_TEST_DATABASE_URL = os.getenv(
-    "ASYNC_TEST_DATABASE_URL", "postgresql+asyncpg://pooldrv:pooldrv@localhost:5432/pooldb_test"
+    "ASYNC_TEST_DATABASE_URL", "postgresql+asyncpg://pooldrv:pooldrv@postgres:5432/pooldb_test"
 )
 
 
@@ -37,7 +37,13 @@ def test_db():
         yield db
     finally:
         db.close()
-        Base.metadata.drop_all(bind=engine)
+        try:
+            with engine.connect() as conn:
+                conn.execution_options(isolation_level="AUTOCOMMIT")
+                conn.exec_driver_sql("DROP SCHEMA IF EXISTS public CASCADE;")
+                conn.exec_driver_sql("CREATE SCHEMA public;")
+        except Exception as e:
+            print(f"[test_db] Warning during schema reset: {e}")
 
 
 # Async database engine
@@ -55,7 +61,11 @@ async def async_engine():
     yield engine
 
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        try:
+            await conn.exec_driver_sql("DROP SCHEMA IF EXISTS public CASCADE;")
+            await conn.exec_driver_sql("CREATE SCHEMA public;")
+        except Exception as e:
+            print(f"[async_engine] Warning during schema reset: {e}")
 
     await engine.dispose()
 
@@ -89,15 +99,19 @@ async def async_test_db():
             await session.close()
 
     async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.drop_all)
+        try:
+            await conn.exec_driver_sql("DROP SCHEMA IF EXISTS public CASCADE;")
+            await conn.exec_driver_sql("CREATE SCHEMA public;")
+        except Exception as e:
+            print(f"[async_test_db] Warning during schema reset: {e}")
 
     await engine.dispose()
 
 
-@pytest_asyncio.fixture(scope="function")
-async def db_session(async_test_db):
-    """Alias for async_test_db for compatibility"""
-    yield async_test_db
+@pytest.fixture(scope="function")
+def db_session(test_db):
+    """Provide a sync Session for services/tests that expect it."""
+    yield test_db
 
 
 @pytest.fixture(scope="function")

@@ -34,8 +34,19 @@ interface Order {
 export const Orders = () => {
   const navigate = useNavigate();
   
-  // Mock data for demonstration
-  const [orders] = useState<Order[]>([
+  // Get orders from localStorage if exists
+  const getOrdersFromStorage = (): Order[] => {
+    const storedOrders = localStorage.getItem('orders-list');
+    if (storedOrders) {
+      try {
+        return JSON.parse(storedOrders);
+      } catch {
+        // If parse fails, return default mock data
+      }
+    }
+    
+    // Default mock data
+    return [
     {
       id: '1',
       code: 'EM-2025-NEU001-001',
@@ -76,7 +87,10 @@ export const Orders = () => {
       deadline: '2025-04-15',
       partsCount: 1
     }
-  ]);
+    ];
+  };
+  
+  const [orders] = useState<Order[]>(getOrdersFromStorage());
 
   const getStatusBadge = (status: Order['status']) => {
     const colorMap = {

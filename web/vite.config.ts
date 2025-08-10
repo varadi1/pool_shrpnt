@@ -19,13 +19,21 @@ export default defineConfig({
       '@routes': path.resolve(__dirname, './src/routes')
     }
   },
+  optimizeDeps: {
+    exclude: ['playwright', '@playwright/test', 'playwright-core']
+  },
   server: {
+    host: '0.0.0.0',
     port: 3000,
     proxy: {
       '/api': {
-        target: process.env.VITE_API_BASE_URL || 'http://localhost:8000',
+        // Use internal Docker URL when provided; otherwise default to host API
+        target: process.env.API_INTERNAL_URL || 'http://localhost:8000',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '')
+        // Keep the '/api' prefix when proxying so backend aliases like
+        // '/api/...'(and '/api/v1/...') resolve correctly.
+        // IMPORTANT: Do not rewrite the path here.
+        rewrite: (p) => p
       }
     }
   },

@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class NotificationAuditLogger:
     """Handles audit logging for notification events."""
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session):
         """Initialize audit logger."""
         self.session = session
 
@@ -30,24 +30,10 @@ class NotificationAuditLogger:
         correlation_id: UUID | None = None,
         actor: str | None = None,
     ) -> AuditLog:
-        """Log NOTIFICATION_SENT event with metadata.
-
-        Args:
-            notification_id: Notification ID
-            template_key: Template used
-            recipients: List of recipients
-            channel: Delivery channel
-            variables: Template variables used
-            correlation_id: Correlation ID for tracing
-            actor: User/system that triggered notification
-
-        Returns:
-            AuditLog entry
-        """
+        """Log NOTIFICATION_SENT event with metadata."""
         if not correlation_id:
             correlation_id = uuid4()
 
-        # Prepare metadata
         metadata = {
             "notification_id": str(notification_id),
             "template_key": template_key,
@@ -65,20 +51,22 @@ class NotificationAuditLogger:
             "timestamp": datetime.now(UTC).isoformat(),
         }
 
-        # Create audit log entry
         audit_entry = AuditLog(
             event_type="NOTIFICATION_SENT",
             entity_type="notification",
             entity_id=str(notification_id),
             actor=actor or "system",
             action="send",
-            metadata=metadata,
+            metadata_json=metadata,
             correlation_id=correlation_id,
             created_at=datetime.now(UTC),
         )
 
         self.session.add(audit_entry)
-        await self.session.commit()
+        if isinstance(self.session, AsyncSession):
+            await self.session.commit()
+        else:
+            self.session.commit()
 
         logger.info(
             "Logged NOTIFICATION_SENT event",
@@ -100,18 +88,7 @@ class NotificationAuditLogger:
         reason: str | None = None,
         correlation_id: UUID | None = None,
     ) -> AuditLog:
-        """Log notification delivery status change.
-
-        Args:
-            notification_id: Notification ID
-            old_status: Previous status
-            new_status: New status
-            reason: Reason for status change
-            correlation_id: Correlation ID for tracing
-
-        Returns:
-            AuditLog entry
-        """
+        """Log notification delivery status change."""
         if not correlation_id:
             correlation_id = uuid4()
 
@@ -130,13 +107,16 @@ class NotificationAuditLogger:
             entity_id=str(notification_id),
             actor="system",
             action="status_change",
-            metadata=metadata,
+            metadata_json=metadata,
             correlation_id=correlation_id,
             created_at=datetime.now(UTC),
         )
 
         self.session.add(audit_entry)
-        await self.session.commit()
+        if isinstance(self.session, AsyncSession):
+            await self.session.commit()
+        else:
+            self.session.commit()
 
         logger.info(
             f"Logged delivery status change: {old_status} -> {new_status}",
@@ -155,27 +135,16 @@ class NotificationAuditLogger:
         template_key: str,
         correlation_id: UUID | None = None,
     ) -> AuditLog:
-        """Store notification content for compliance.
-
-        Args:
-            notification_id: Notification ID
-            rendered_content: Rendered notification content
-            template_key: Template used
-            correlation_id: Correlation ID for tracing
-
-        Returns:
-            AuditLog entry
-        """
+        """Store notification content for compliance."""
         if not correlation_id:
             correlation_id = uuid4()
 
-        # Store content with encryption if needed
         metadata = {
             "notification_id": str(notification_id),
             "template_key": template_key,
             "content": {
                 "subject": rendered_content.get("subject"),
-                "body": rendered_content.get("body")[:1000],  # Truncate for storage
+                "body": rendered_content.get("body")[:1000],
                 "full_content_hash": self._hash_content(rendered_content.get("body", "")),
             },
             "timestamp": datetime.now(UTC).isoformat(),
@@ -188,13 +157,16 @@ class NotificationAuditLogger:
             entity_id=str(notification_id),
             actor="system",
             action="store_content",
-            metadata=metadata,
+            metadata_json=metadata,
             correlation_id=correlation_id,
             created_at=datetime.now(UTC),
         )
 
         self.session.add(audit_entry)
-        await self.session.commit()
+        if isinstance(self.session, AsyncSession):
+            await self.session.commit()
+        else:
+            self.session.commit()
 
         logger.info(
             "Stored notification content for compliance",
@@ -215,18 +187,7 @@ class NotificationAuditLogger:
         error: str | None = None,
         correlation_id: UUID | None = None,
     ) -> AuditLog:
-        """Log template rendering event.
-
-        Args:
-            template_key: Template identifier
-            variables: Variables used
-            success: Whether rendering succeeded
-            error: Error message if failed
-            correlation_id: Correlation ID for tracing
-
-        Returns:
-            AuditLog entry
-        """
+        """Log template rendering event."""
         if not correlation_id:
             correlation_id = uuid4()
 
@@ -245,13 +206,16 @@ class NotificationAuditLogger:
             entity_id=template_key,
             actor="system",
             action="render",
-            metadata=metadata,
+            metadata_json=metadata,
             correlation_id=correlation_id,
             created_at=datetime.now(UTC),
         )
 
         self.session.add(audit_entry)
-        await self.session.commit()
+        if isinstance(self.session, AsyncSession):
+            await self.session.commit()
+        else:
+            self.session.commit()
 
         return audit_entry
 
@@ -264,19 +228,7 @@ class NotificationAuditLogger:
         error: str | None = None,
         correlation_id: UUID | None = None,
     ) -> AuditLog:
-        """Log notification retry attempt.
-
-        Args:
-            notification_id: Notification ID
-            attempt_number: Current attempt number
-            max_attempts: Maximum attempts allowed
-            next_retry_at: When next retry is scheduled
-            error: Error that caused retry
-            correlation_id: Correlation ID for tracing
-
-        Returns:
-            AuditLog entry
-        """
+        """Log notification retry attempt."""
         if not correlation_id:
             correlation_id = uuid4()
 
@@ -296,13 +248,16 @@ class NotificationAuditLogger:
             entity_id=str(notification_id),
             actor="system",
             action="retry",
-            metadata=metadata,
+            metadata_json=metadata,
             correlation_id=correlation_id,
             created_at=datetime.now(UTC),
         )
 
         self.session.add(audit_entry)
-        await self.session.commit()
+        if isinstance(self.session, AsyncSession):
+            await self.session.commit()
+        else:
+            self.session.commit()
 
         logger.info(
             f"Logged retry attempt {attempt_number}/{max_attempts}",
@@ -356,13 +311,16 @@ class NotificationAuditLogger:
             entity_id=str(correlation_id),
             actor="system",
             action="process_batch",
-            metadata=metadata,
+            metadata_json=metadata,
             correlation_id=correlation_id,
             created_at=datetime.now(UTC),
         )
 
         self.session.add(audit_entry)
-        await self.session.commit()
+        if isinstance(self.session, AsyncSession):
+            await self.session.commit()
+        else:
+            self.session.commit()
 
         logger.info(
             f"Logged batch processing: {succeeded}/{processed} succeeded",
@@ -376,14 +334,6 @@ class NotificationAuditLogger:
         return audit_entry
 
     async def get_notification_audit_trail(self, notification_id: UUID) -> list[AuditLog]:
-        """Get complete audit trail for a notification.
-
-        Args:
-            notification_id: Notification ID
-
-        Returns:
-            List of audit entries
-        """
         stmt = (
             select(AuditLog)
             .where(
@@ -393,32 +343,20 @@ class NotificationAuditLogger:
             .order_by(AuditLog.created_at)
         )
 
-        result = await self.session.execute(stmt)
+        result = await self.session.execute(stmt) if isinstance(self.session, AsyncSession) else self.session.execute(stmt)
         return list(result.scalars().all())
 
     async def get_audit_summary(self, hours: int = 24) -> dict[str, Any]:
-        """Get audit summary for notifications.
-
-        Args:
-            hours: Hours to look back
-
-        Returns:
-            Audit summary
-        """
         since = datetime.now(UTC) - timedelta(hours=hours)
 
-        # Get audit entries
         stmt = select(AuditLog).where(
             AuditLog.created_at >= since,
-            AuditLog.entity_type.in_(
-                ["notification", "notification_template", "notification_batch"]
-            ),
+            AuditLog.entity_type.in_(["notification", "notification_template", "notification_batch"]),
         )
 
-        result = await self.session.execute(stmt)
+        result = await self.session.execute(stmt) if isinstance(self.session, AsyncSession) else self.session.execute(stmt)
         audit_entries = result.scalars().all()
 
-        # Summarize by event type
         event_counts = {}
         for entry in audit_entries:
             event_type = entry.event_type
@@ -437,14 +375,5 @@ class NotificationAuditLogger:
         }
 
     def _hash_content(self, content: str) -> str:
-        """Hash content for storage.
-
-        Args:
-            content: Content to hash
-
-        Returns:
-            SHA256 hash
-        """
         import hashlib
-
         return hashlib.sha256(content.encode()).hexdigest()

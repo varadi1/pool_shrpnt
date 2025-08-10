@@ -18,6 +18,11 @@ import {
   Edit20Regular,
   Delete20Regular,
   Open20Regular,
+  Edit16Regular,
+  Delete16Regular,
+  CheckmarkCircle20Regular,
+  DismissCircle20Regular,
+  Clock20Regular,
 } from '@fluentui/react-icons';
 import type { Contract } from '@/types/contracts';
 
@@ -129,6 +134,7 @@ export const ContractTable: React.FC<ContractTableProps> = ({
   }, [sortColumn, sortDirection]);
 
   const sortedContracts = useMemo(() => {
+    if (!contracts || !Array.isArray(contracts)) return [];
     if (!sortColumn || !sortDirection) return contracts;
 
     return [...contracts].sort((a, b) => {
@@ -162,6 +168,24 @@ export const ContractTable: React.FC<ContractTableProps> = ({
       default:
         return '';
     }
+  };
+  
+  const getStatusIcon = (status: Contract['status']) => {
+    switch (status) {
+      case 'active':
+        return <CheckmarkCircle20Regular />;
+      case 'inactive':
+        return <DismissCircle20Regular />;
+      case 'expired':
+        return <Clock20Regular />;
+      default:
+        return null;
+    }
+  };
+  
+  const formatDate = (date: string) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('hu-HU');
   };
 
   const handlePreviousPage = () => {
@@ -329,6 +353,91 @@ export const ContractTable: React.FC<ContractTableProps> = ({
   };
 
   const columnIds = ['contractNumber', 'name', 'clientName', 'status', 'startDate', 'endDate', 'pmName', 'actions'];
+  
+  // Define columns for DataGrid with proper structure
+  const columns = useMemo(() => [
+    { 
+      columnId: 'contractNumber',
+      compare: (a: Contract, b: Contract) => a.contractNumber.localeCompare(b.contractNumber),
+      renderHeaderCell: () => columnHeaders.contractNumber,
+      renderCell: (item: Contract) => item.contractNumber
+    },
+    { 
+      columnId: 'name',
+      compare: (a: Contract, b: Contract) => a.name.localeCompare(b.name),
+      renderHeaderCell: () => columnHeaders.name,
+      renderCell: (item: Contract) => item.name
+    },
+    { 
+      columnId: 'clientName',
+      compare: (a: Contract, b: Contract) => (a.clientName || '').localeCompare(b.clientName || ''),
+      renderHeaderCell: () => columnHeaders.clientName,
+      renderCell: (item: Contract) => item.clientName || '-'
+    },
+    { 
+      columnId: 'status',
+      compare: (a: Contract, b: Contract) => a.status.localeCompare(b.status),
+      renderHeaderCell: () => columnHeaders.status,
+      renderCell: (item: Contract) => (
+        <Badge 
+          appearance="filled"
+          className={getStatusBadgeStyle(item.status)}
+        >
+          {getStatusIcon(item.status)} {item.status}
+        </Badge>
+      )
+    },
+    { 
+      columnId: 'startDate',
+      compare: (a: Contract, b: Contract) => a.startDate.localeCompare(b.startDate),
+      renderHeaderCell: () => columnHeaders.startDate,
+      renderCell: (item: Contract) => formatDate(item.startDate)
+    },
+    { 
+      columnId: 'endDate',
+      compare: (a: Contract, b: Contract) => (a.endDate || '').localeCompare(b.endDate || ''),
+      renderHeaderCell: () => columnHeaders.endDate,
+      renderCell: (item: Contract) => item.endDate ? formatDate(item.endDate) : '-'
+    },
+    { 
+      columnId: 'pmName',
+      compare: (a: Contract, b: Contract) => (a.pmName || '').localeCompare(b.pmName || ''),
+      renderHeaderCell: () => columnHeaders.pmName,
+      renderCell: (item: Contract) => item.pmName || '-'
+    },
+    { 
+      columnId: 'actions',
+      renderHeaderCell: () => columnHeaders.actions,
+      renderCell: (item: Contract) => (
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {canEdit && (
+            <Button
+              icon={<Edit16Regular />}
+              appearance="subtle"
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit(item);
+              }}
+              aria-label={`Edit contract ${item.contractNumber}`}
+            />
+          )}
+          {canDelete && (
+            <Button
+              icon={<Delete16Regular />}
+              appearance="subtle"
+              size="small"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete(item);
+              }}
+              aria-label={`Delete contract ${item.contractNumber}`}
+            />
+          )}
+        </div>
+      )
+    },
+  ], [canEdit, canDelete, onEdit, onDelete]);
   const columnHeaders = {
     contractNumber: 'Szerződésszám',
     name: 'Név',
@@ -344,6 +453,7 @@ export const ContractTable: React.FC<ContractTableProps> = ({
     <div className={styles.root}>
       <DataGrid
         items={sortedContracts}
+        columns={columns}
         sortable
         selectionMode="none"
         className={styles.grid}

@@ -100,3 +100,28 @@ class ApiService {
 }
 
 export const api = new ApiService();
+
+// Compatibility wrapper for legacy callers expecting Axios-like response objects
+// Provides get/post/put/patch/delete that resolve to { data } shapes
+export const apiClient = {
+  async get<T>(url: string, config?: AxiosRequestConfig): Promise<{ data: T }> {
+    const data = await api.get<T>(url, config);
+    return { data };
+  },
+  async post<T>(url: string, body?: any, config?: AxiosRequestConfig): Promise<{ data: T }> {
+    const data = await api.post<T>(url, body, config);
+    return { data };
+  },
+  async put<T>(url: string, body?: any, config?: AxiosRequestConfig): Promise<{ data: T }> {
+    const data = await api.put<T>(url, body, config);
+    return { data };
+  },
+  async patch<T>(url: string, body?: any, config?: AxiosRequestConfig): Promise<{ data: T }> {
+    const data = await api.patch<T>(url, body, config);
+    return { data };
+  },
+  async delete<T>(url: string, config?: AxiosRequestConfig): Promise<{ data: T }> {
+    const data = await api.delete<T>(url, config);
+    return { data };
+  },
+};

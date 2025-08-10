@@ -99,10 +99,22 @@ export const transformContract = (response: ContractResponse): Contract => {
   };
 };
 
-export const transformContractList = (response: ContractListResponse): ContractList => ({
-  items: response.items.map(transformContract),
-  total: response.total,
-  page: response.page,
-  pageSize: response.page_size,
-  totalPages: response.total_pages,
-});
+export const transformContractList = (response: ContractListResponse): ContractList => {
+  if (!response) {
+    return {
+      items: [],
+      total: 0,
+      page: 1,
+      pageSize: 25,
+      totalPages: 0,
+    };
+  }
+  
+  return {
+    items: (response.items || []).map(transformContract),
+    total: response.total || 0,
+    page: response.page || 1,
+    pageSize: response.page_size || 25,
+    totalPages: response.total_pages || 0,
+  };
+};

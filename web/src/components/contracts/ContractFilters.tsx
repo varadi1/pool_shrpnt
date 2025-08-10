@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, useLayoutEffect } from 'react';
 import {
   SearchBox,
   Dropdown,
@@ -81,19 +81,47 @@ export const ContractFilters: React.FC<ContractFiltersProps> = ({
 }) => {
   const styles = useStyles();
   const [localSearch, setLocalSearch] = useState(filters.search || '');
+  const searchBoxRef = useRef<HTMLDivElement | null>(null);
+  const searchFocusedRef = useRef(false);
+  const filtersRef = useRef<IContractFilters>(filters);
+
+  useEffect(() => {
+    filtersRef.current = filters;
+  }, [filters]);
 
   // Debounced search handler
   const debouncedSearch = useMemo(
     () =>
       debounce((value: string) => {
-        onFiltersChange({ ...filters, search: value });
+        // use latest filters snapshot to avoid recreating debounce and losing focus
+        onFiltersChange({ ...filtersRef.current, search: value });
       }, 300),
-    [filters, onFiltersChange]
+    [onFiltersChange]
   );
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      debouncedSearch.cancel();
+    };
+  }, [debouncedSearch]);
+
+  // After any render, if user was typing, ensure the input keeps focus
+  useLayoutEffect(() => {
+    if (searchFocusedRef.current) {
+      const input = searchBoxRef.current?.querySelector('input');
+      input?.focus();
+    }
+  });
 
   // Update local search when filters change externally
   useEffect(() => {
     setLocalSearch(filters.search || '');
+    // If user was typing and focus disappeared due to re-render, restore it
+    if (searchFocusedRef.current) {
+      const input = searchBoxRef.current?.querySelector('input');
+      input?.focus();
+    }
   }, [filters.search]);
 
   const handleSearchChange = useCallback(
@@ -105,8 +133,8 @@ export const ContractFilters: React.FC<ContractFiltersProps> = ({
   );
 
   const handleStatusChange = useCallback(
-    (_: any, data: { value: string }) => {
-      const status = data.value as IContractFilters['status'];
+    (_: any, data: { optionValue?: string }) => {
+      const status = (data.optionValue || undefined) as IContractFilters['status'];
       onFiltersChange({ ...filters, status });
     },
     [filters, onFiltersChange]
@@ -141,6 +169,9 @@ export const ContractFilters: React.FC<ContractFiltersProps> = ({
           size="medium"
           contentBefore={<Filter20Regular />}
           aria-label="Search contracts"
+          ref={searchBoxRef}
+          onFocus={() => (searchFocusedRef.current = true)}
+          onBlur={() => (searchFocusedRef.current = false)}
         />
 
         <div className={styles.filterGroup}>

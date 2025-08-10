@@ -73,8 +73,15 @@ class RateLimitError(PoolDRVError):
 class GraphAPIError(PoolDRVError):
     """Raised when Microsoft Graph API returns an error."""
 
-    def __init__(self, message: str, graph_error: dict[str, Any] | None = None, **kwargs):
-        super().__init__(message, status.HTTP_502_BAD_GATEWAY, **kwargs)
+    def __init__(
+        self,
+        message: str,
+        graph_error: dict[str, Any] | None = None,
+        status_code: int = status.HTTP_502_BAD_GATEWAY,
+        **kwargs,
+    ):
+        # Allow callers to override status_code (e.g., 429 for throttling)
+        super().__init__(message, status_code, **kwargs)
         if graph_error:
             self.details["graph_error"] = graph_error
 

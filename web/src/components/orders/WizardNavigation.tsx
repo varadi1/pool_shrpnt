@@ -89,8 +89,8 @@ export const WizardNavigation: React.FC<WizardNavigationProps | LegacyWizardNavi
         }
       }}
     >
-      <ProgressBar max={1} value={progressValue} aria-label={`Step ${currentStepIndex + 1} of ${steps.length}`} />
-      <Text size={200}>{Math.round(progressValue * 100)}% Complete</Text>
+      <ProgressBar max={1} value={progressValue} aria-label={`Lépés ${currentStepIndex + 1} / ${steps.length}`} />
+      <Text size={200}>{Math.round(progressValue * 100)}% kész</Text>
       <div style={{ display: 'flex', gap: 12, marginTop: 16, flexWrap: 'wrap' }} role="list">
         {steps.map((step, index) => {
           const isActive = index === currentStepIndex;
@@ -151,13 +151,13 @@ export const WizardNavigation: React.FC<WizardNavigationProps | LegacyWizardNavi
             disabled={currentStepIndex === 0 || isSubmitting || isLoading}
             data-testid="wizard-back"
           >
-            Back
+             Vissza
           </Button>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {onSaveDraft && (
             <Button appearance="subtle" onClick={onSaveDraft} data-testid="wizard-save-draft" disabled={isSubmitting || isLoading}>
-              Save Draft
+              Piszkozat mentése
             </Button>
           )}
           {isLastStep ? (
@@ -176,7 +176,7 @@ export const WizardNavigation: React.FC<WizardNavigationProps | LegacyWizardNavi
               disabled={!canProceed || isSubmitting || isLoading}
               data-testid="wizard-next"
             >
-              Next
+            Következő
             </Button>
           )}
         </div>

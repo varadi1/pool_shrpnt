@@ -11,7 +11,9 @@ import type {
   TemplateImportResult,
   TemplateShare,
   TemplateMigration,
-  MigrationResult
+  MigrationResult,
+  TemplateAnalytics,
+  AnalyticsExportRequest
 } from '@/types/templates';
 
 export const templatesApi = {
@@ -413,6 +415,77 @@ export const templatesApi = {
   }> {
     const response = await axiosClient.get(
       `/templates/${templateId}/migrations`
+    );
+    return response.data;
+  },
+
+  // Analytics Operations
+  async getAnalytics(templateId: string, timeRange?: string): Promise<TemplateAnalytics> {
+    const params = new URLSearchParams();
+    if (timeRange) params.append('timeRange', timeRange);
+    
+    const response = await axiosClient.get<TemplateAnalytics>(
+      `/templates/${templateId}/analytics?${params.toString()}`
+    );
+    return response.data;
+  },
+
+  async exportAnalytics(request: AnalyticsExportRequest): Promise<Blob> {
+    const response = await axiosClient.post(
+      `/templates/${request.templateId}/analytics/export`,
+      {
+        format: request.format,
+        timeRange: request.timeRange,
+      },
+      {
+        responseType: 'blob',
+      }
+    );
+    return response.data;
+  },
+
+  async getUsageStatistics(templateId: string): Promise<{
+    totalOrders: number;
+    activeOrders: number;
+    archivedOrders: number;
+    byVersion: { version: string; count: number }[];
+  }> {
+    const response = await axiosClient.get(
+      `/templates/${templateId}/usage-statistics`
+    );
+    return response.data;
+  },
+
+  async getAdoptionTrends(templateId: string, period: '7d' | '30d' | '90d' | '1y'): Promise<{
+    trend: { date: string; count: number }[];
+    adoptionRate: number;
+    changePercent: number;
+  }> {
+    const response = await axiosClient.get(
+      `/templates/${templateId}/adoption-trends?period=${period}`
+    );
+    return response.data;
+  },
+
+  async getPerformanceMetrics(templateId: string): Promise<{
+    avgProvisioningTime: number;
+    successRate: number;
+    errorRate: number;
+    commonErrors: { error: string; count: number }[];
+  }> {
+    const response = await axiosClient.get(
+      `/templates/${templateId}/performance-metrics`
+    );
+    return response.data;
+  },
+
+  async getUsageHeatMap(templateId: string, granularity: 'daily' | 'weekly' | 'monthly'): Promise<{
+    heatMap: number[][];
+    startDate: string;
+    endDate: string;
+  }> {
+    const response = await axiosClient.get(
+      `/templates/${templateId}/usage-heatmap?granularity=${granularity}`
     );
     return response.data;
   },

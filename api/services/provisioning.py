@@ -29,8 +29,9 @@ class ProvisioningService:
 
     async def _get_redis(self) -> redis.Redis:
         if not self.redis_client:
-            self.redis_client = await redis.from_url(
-                settings.REDIS_URL, encoding="utf-8", decode_responses=True
+            # redis.asyncio.from_url returns a client synchronously
+            self.redis_client = redis.from_url(
+                settings.redis_url, encoding="utf-8", decode_responses=True
             )
         return self.redis_client
 
@@ -120,7 +121,11 @@ class ProvisioningService:
         details_key = f"job:{job_id}:details"
         details = await redis_client.get(details_key)
         if details:
-            job_data["details"] = json.loads(details)
+            # In tests, mocks may return non-bytes; guard accordingly
+            if isinstance(details, (bytes, bytearray)):
+                details = details.decode("utf-8")
+            if isinstance(details, str):
+                job_data["details"] = json.loads(details)
 
         return job_data
 

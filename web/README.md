@@ -43,8 +43,15 @@ npm run generate-client
 
 ### Start Development Server
 
+Local (host) development:
 ```bash
 npm run dev
+```
+
+Docker (recommended full stack):
+```bash
+cd ..
+./scripts/start.sh
 ```
 
 The application will be available at http://localhost:3000
@@ -93,7 +100,7 @@ web/
 
 - **React 18** - UI framework
 - **TypeScript 5.x** - Type safety
-- **Vite 5** - Build tool and dev server
+- **Vite 7** - Build tool and dev server
 - **Fluent UI 9** - Microsoft design system components
 - **React Router v6** - Client-side routing
 - **React Query v5** - Server state management

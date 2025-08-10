@@ -14,7 +14,7 @@ go
 **Existing System Integration:**
 
 - Integrates with: Existing Docker Compose microservice architecture
-- Technology: React 18, Vite 5, Node.js 18, Nginx (for production)
+ - Technology: React 18, Vite 7, Node.js 20, Nginx (for production)
 - Follows pattern: Multi-stage Docker builds used in API service
 - Touch points: Package.json scripts, Vite configuration, environment variables
 
@@ -43,8 +43,8 @@ go
 
 ## Tasks / Subtasks
 
-- [ ] Create multi-stage Dockerfile in web/ directory (AC: 1, 2)
-  - [ ] Define development stage with Node 18 Alpine base
+ - [ ] Create multi-stage Dockerfile in web/ directory (AC: 1, 2)
+  - [ ] Define development stage with Node 20 Alpine base
   - [ ] Configure WORKDIR and package installation with cache optimization
   - [ ] Set up development CMD with proper Vite host binding
 - [ ] Implement production build stage (AC: 2, 4)
@@ -94,11 +94,11 @@ go
 - Production image must be under 50MB base size
 - Cannot break existing local development workflow
 
-**Example Dockerfile Structure:**
+**Example Dockerfile Structure (updated for Vite 7 and Node 20):**
 
 ```dockerfile
 # Development stage
-FROM node:18-alpine AS development
+FROM node:20-alpine AS development
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci --only=development
@@ -107,7 +107,7 @@ EXPOSE 3000
 CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0", "--port", "3000"]
 
 # Build stage
-FROM node:18-alpine AS build
+FROM node:20-alpine AS build
 WORKDIR /app
 COPY package*.json ./
 RUN npm ci
@@ -149,6 +149,10 @@ server {
     add_header X-XSS-Protection "1; mode=block" always;
 }
 ```
+
+**Notes:**
+- Vite 7 requires setting `server.host` to `0.0.0.0` (or using `--host 0.0.0.0`) to expose HMR from Docker.
+- Use `VITE_API_BASE_URL` naming consistently across docs and Compose.
 
 **Note on npm ci vs npm install:**
 - Use `npm ci` for reproducible builds (reads from package-lock.json)

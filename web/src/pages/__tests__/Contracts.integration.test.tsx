@@ -4,7 +4,27 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FluentProvider, webLightTheme } from '@fluentui/react-components';
 import { BrowserRouter } from 'react-router-dom';
-import Contracts from '../Contracts';
+import '../../components/contracts/__tests__/setup.tsx'; // Import DataGrid mocks
+import { Contracts } from '../Contracts';
+
+// Mock ResizeObserver
+global.ResizeObserver = vi.fn().mockImplementation(() => ({
+  observe: vi.fn(),
+  unobserve: vi.fn(),
+  disconnect: vi.fn(),
+}));
+
+// Mock matchMedia
+global.matchMedia = vi.fn().mockImplementation(query => ({
+  matches: false,
+  media: query,
+  onchange: null,
+  addListener: vi.fn(),
+  removeListener: vi.fn(),
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  dispatchEvent: vi.fn(),
+}));
 import { contractsApi } from '../../services/api/contracts';
 import { useAuth } from '../../hooks/useAuth';
 import { Contract } from '../../types/contracts';
@@ -17,10 +37,25 @@ vi.mock('../../services/api/contracts', () => ({
     create: vi.fn(),
     update: vi.fn(),
     delete: vi.fn(),
-    getUserContracts: vi.fn()
+    getUserContracts: vi.fn(),
+    getByPmId: vi.fn(),
+    getActive: vi.fn(),
+    exportToCsv: vi.fn()
   }
 }));
 vi.mock('../../hooks/useAuth');
+vi.mock('../../components/common/ToastProvider', () => ({
+  useToast: () => ({
+    showToast: vi.fn(),
+    showSuccess: vi.fn(),
+    showWarning: vi.fn(),
+    showInfo: vi.fn(),
+    showError: vi.fn()
+  })
+}));
+vi.mock('../../hooks/useContractStatusMonitor', () => ({
+  useContractStatusMonitor: vi.fn()
+}));
 
 // Mock contract data
 const mockContracts: Contract[] = [
@@ -80,7 +115,9 @@ const renderContractsPage = () => {
   );
 };
 
-describe.skip('Contracts Page - Integration Tests', () => {
+describe('Contracts Page - Integration Tests', () => {
+  // Increase timeout for integration tests
+  vi.setConfig({ testTimeout: 10000 });
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useFakeTimers();
@@ -97,7 +134,12 @@ describe.skip('Contracts Page - Integration Tests', () => {
       isLoading: false,
       login: vi.fn(),
       logout: vi.fn(),
-      getAccessToken: vi.fn()
+      getAccessToken: vi.fn(),
+      userRoles: ['NEU_Admin'],
+      hasRole: vi.fn((role) => role === 'NEU_Admin'),
+      hasAnyRole: vi.fn((roles) => roles.includes('NEU_Admin')),
+      isAdmin: vi.fn(() => true),
+      isPM: vi.fn(() => false)
     });
 
     // Default mock responses
@@ -108,6 +150,9 @@ describe.skip('Contracts Page - Integration Tests', () => {
       pageSize: 10,
       totalPages: 1
     });
+    
+    // Mock exportToCsv to avoid DOM manipulation in tests
+    vi.mocked(contractsApi.exportToCsv).mockResolvedValue(undefined);
   });
 
   afterEach(() => {

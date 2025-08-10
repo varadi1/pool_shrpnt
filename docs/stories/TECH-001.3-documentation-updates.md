@@ -67,7 +67,7 @@ Draft
   - [ ] Create dev.sh for development mode
   - [ ] Add stop.sh for graceful shutdown
 - [ ] Update environment documentation (AC: 5, 9)
-  - [ ] Update .env.example with VITE_API_URL
+- [ ] Update .env.example with VITE_API_BASE_URL
   - [ ] Document all frontend environment variables
   - [ ] Explain Docker networking for API communication
 - [ ] Add troubleshooting guide (AC: 4)
@@ -189,6 +189,12 @@ docker-compose exec frontend sh
 
 # Run npm commands in container
 docker-compose exec frontend npm install <package>
+
+# Start full stack (infra + services + frontend)
+./scripts/start.sh
+
+# Stop all services
+./scripts/stop.sh
 ```
 
 ### Local Development (Alternative)
@@ -212,8 +218,8 @@ If you prefer local development:
 ### Frontend Variables
 ```env
 # API Configuration
-VITE_API_URL=http://localhost:8000  # Local development
-# In Docker: http://api:8000
+VITE_API_BASE_URL=http://localhost:8000  # Local development outside Docker
+# In Docker, Compose sets: http://api:8000
 
 # Environment
 NODE_ENV=development

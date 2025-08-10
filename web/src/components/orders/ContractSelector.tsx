@@ -9,8 +9,10 @@ import {
   shorthands,
 } from '@fluentui/react-components';
 import { useQuery } from '@tanstack/react-query';
-import { contractsApi, type Contract, getUserContracts } from '../../services/api/contracts';
+import { getUserContracts } from '../../services/api/contracts';
+import type { Contract } from '@/types/contracts';
 import { useAuth } from '@/hooks/useAuth';
+import { isE2EMode } from '@/config/auth.config';
 
 const useStyles = makeStyles({
   container: {
@@ -41,54 +43,63 @@ interface ContractSelectorProps {
 
 export const ContractSelector: React.FC<ContractSelectorProps> = ({ value, onChange }) => {
   const styles = useStyles();
-  const { user } = useAuth();
+  const { user, userRoles } = useAuth();
   const [selectedContract, setSelectedContract] = useState<Contract | null>(null);
 
   const { data: contracts, isLoading, error, refetch } = useQuery<Contract[]>({
-    queryKey: ['contracts', user?.id],
+    queryKey: ['contracts', (user as any)?.username || (user as any)?.localAccountId || 'mock'],
     queryFn: async () => getUserContracts(),
     staleTime: 0,
     gcTime: 0,
-    enabled: !!user,
+    // In mock/E2E/dev mode there might be no real MSAL account present.
+    // Ensure we still fetch contracts when mock auth is enabled.
+    enabled: !!user || isE2EMode(),
   });
 
   useEffect(() => {
     if (contracts && value) {
-      const contract = contracts.find(c => c.id === value);
+      const contract = contracts.find(c => c.id.toString() === value);
       if (contract) {
         setSelectedContract(contract);
       }
     }
   }, [contracts, value]);
 
-  const handleContractChange = (_: any, data: { value: string }) => {
-    const contract = contracts?.find(c => c.id === data.value);
+  const handleContractChange = (_: any, data: any) => {
+    const selected = String(data.optionValue ?? data.value ?? '');
+    const contract = contracts?.find(c => c.id.toString() === selected);
     if (contract) {
       setSelectedContract(contract);
-      onChange(data.value, contract);
+      onChange(selected, contract);
     }
   };
 
   const filteredContracts = React.useMemo(() => {
     if (!contracts) return [];
-    
-    // NEU_Admin sees all contracts
-    if (user?.roles?.includes?.('NEU_Admin') || user?.role === 'NEU_Admin') {
+
+    // Prefer robust role detection from our auth hook
+    const isAdmin = Array.isArray(userRoles) && userRoles.includes('NEU_Admin');
+    const isPm = Array.isArray(userRoles) && userRoles.includes('NEU_PM');
+
+    if (isAdmin) return contracts;
+
+    if (isPm) {
+      // Try to match by known identifiers if available; otherwise, backend should scope results
+      const userOid = (user as any)?.id || (user as any)?.localAccountId || (user?.idTokenClaims as any)?.oid;
+      if (userOid) {
+        return contracts.filter((c: any) => String(c.pmId || '') === String(userOid));
+      }
       return contracts;
     }
-    
-    // PM sees only assigned contracts
-    if (user?.roles?.includes?.('NEU_PM') || user?.role === 'NEU_PM') {
-      return contracts.filter(c => (c as any).pmId === (user as any).id);
-    }
-    
-    return [];
-  }, [contracts, user]);
+
+    // Default to showing what the backend returned; it should already be RBAC-filtered
+    return contracts;
+  }, [contracts, user, userRoles]);
 
   if (isLoading) {
     return (
       <div className={styles.container}>
-        <Spinner label="Loading contracts..." />
+        <Spinner label="Szerződések betöltése..." />
       </div>
     );
   }
@@ -96,32 +107,32 @@ export const ContractSelector: React.FC<ContractSelectorProps> = ({ value, onCha
   if (error) {
     return (
       <div className={styles.container}>
-        <Text>Failed to load contracts. Please try again.</Text>
-        <button type="button" onClick={() => refetch()}>Retry</button>
+        <Text>Nem sikerült betölteni a szerződéseket. Kérjük, próbálja újra.</Text>
+        <button type="button" onClick={() => refetch()}>Újrapróbálkozás</button>
       </div>
     );
   }
 
   return (
     <div className={styles.container}>
-      <Field label="Select Contract" required>
+      <Field label="Szerződés kiválasztása" required>
         <Dropdown
-          placeholder="Choose a contract"
-          value={selectedContract ? `${selectedContract.number} - ${selectedContract.name}` : ''}
+          placeholder="Válasszon szerződést"
+          value={selectedContract ? `${selectedContract.contractNumber ?? (selectedContract as any).number} - ${selectedContract.name}` : ''}
           selectedOptions={value ? [value] : []}
           onOptionSelect={handleContractChange}
           disabled={!filteredContracts || filteredContracts.length === 0}
         >
           {filteredContracts?.map((contract) => (
-            <Option key={contract.id} value={contract.id}>
-              {contract.number} - {contract.name} ({contract.clientName})
+            <Option key={contract.id} value={contract.id.toString()}>
+              {(contract.contractNumber ?? (contract as any).number)} - {contract.name}
             </Option>
           ))}
         </Dropdown>
       </Field>
 
       {/* Clickable cards for tests and quick selection */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+      <div className="contract-cards-grid">
           {filteredContracts?.map((c) => (
           <button
             key={String(c.id)}
@@ -130,24 +141,21 @@ export const ContractSelector: React.FC<ContractSelectorProps> = ({ value, onCha
               setSelectedContract(c);
               onChange(String(c.id), c);
             }}
-            aria-label={`Select contract ${c.name}`}
+            aria-label={`Szerződés kiválasztása: ${c.name}`}
             style={{
               textAlign: 'left',
-              border: '1px solid var(--colorNeutralStroke1)',
+              border: value === c.id.toString() ? '2px solid var(--colorBrandStroke1)' : '1px solid var(--colorNeutralStroke1)',
               borderRadius: 8,
               padding: 12,
-              background: value === c.id ? 'var(--colorBrandBackground2)' : 'transparent',
+              background: value === c.id.toString() ? 'var(--colorBrandBackground2)' : 'var(--colorNeutralBackground1)',
               cursor: 'pointer',
+              transition: 'all 0.2s ease',
             }}
           >
             <Text weight="semibold">{c.name}</Text>
             <div className={styles.detailRow}>
-              <Text className={styles.label}>Number:</Text>
-              <Text>{c.number}</Text>
-            </div>
-            <div className={styles.detailRow}>
-              <Text className={styles.label}>Client:</Text>
-              <Text>{c.clientName}</Text>
+              <Text className={styles.label}>Szám:</Text>
+              <Text>{c.contractNumber}</Text>
             </div>
           </button>
         ))}
@@ -156,22 +164,18 @@ export const ContractSelector: React.FC<ContractSelectorProps> = ({ value, onCha
       {selectedContract && (
         <div className={styles.contractDetails}>
           <div className={styles.detailRow}>
-            <Text className={styles.label}>Contract Number:</Text>
-            <Text>{selectedContract.number}</Text>
+            <Text className={styles.label}>Szerződés száma:</Text>
+            <Text>{selectedContract.contractNumber}</Text>
           </div>
           <div className={styles.detailRow}>
-            <Text className={styles.label}>Contract Name:</Text>
+            <Text className={styles.label}>Szerződés neve:</Text>
             <Text>{selectedContract.name}</Text>
-          </div>
-          <div className={styles.detailRow}>
-            <Text className={styles.label}>Client:</Text>
-            <Text>{selectedContract.clientName}</Text>
           </div>
         </div>
       )}
 
       {filteredContracts?.length === 0 && (
-        <Text>No contracts available. Please contact an administrator.</Text>
+        <Text>Nincsenek elérhető szerződések. Kérjük, forduljon a rendszergazdához.</Text>
       )}
     </div>
   );

@@ -314,7 +314,11 @@ class TestTemplateRollbackEndpoint:
         """Test rollback validation endpoint."""
         # Setup template
         template = FolderTemplate(
-            id=201, name="Validate Test", version_number="2.0.0", status="published"
+            id=201,
+            name="Validate Test",
+            version_number="2.0.0",
+            status="published",
+            folder_structure={"folders": []},
         )
         test_db.add(template)
 
@@ -342,7 +346,11 @@ class TestTemplateRollbackEndpoint:
     def test_cannot_rollback_to_current(self, client: TestClient, test_db: Session):
         """Test cannot rollback to current version."""
         template = FolderTemplate(
-            id=202, name="Current Version", version_number="1.0.0", status="published"
+            id=202,
+            name="Current Version",
+            version_number="1.0.0",
+            status="published",
+            folder_structure={"folders": []},
         )
         test_db.add(template)
 

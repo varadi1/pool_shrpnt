@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { FluentProvider, webLightTheme } from '@fluentui/react-components';
 import { BrowserRouter } from 'react-router-dom';
+import '../../components/contracts/__tests__/setup.tsx'; // Import DataGrid mocks
 import Contracts from '../Contracts';
 import { contractsApi } from '../../services/api/contracts';
 import { useAuth } from '../../hooks/useAuth';
@@ -73,7 +74,7 @@ const renderContractsPage = () => {
   );
 };
 
-describe.skip('Contracts Page - Role-Based Access Control', () => {
+describe('Contracts Page - Role-Based Access Control', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });

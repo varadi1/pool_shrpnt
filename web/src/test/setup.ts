@@ -184,3 +184,18 @@ global.ResizeObserver = vi.fn().mockImplementation(() => ({
   unobserve: vi.fn(),
   disconnect: vi.fn(),
 }));
+
+// Robust clipboard mock for JSDOM; avoid redefining if user-event sets it
+try {
+  if (!('clipboard' in navigator)) {
+    Object.defineProperty(global.navigator, 'clipboard', {
+      writable: true,
+      value: {
+        writeText: vi.fn().mockResolvedValue(undefined),
+        readText: vi.fn().mockResolvedValue(''),
+      },
+    });
+  }
+} catch {
+  // ignore
+}

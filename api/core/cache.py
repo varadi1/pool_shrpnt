@@ -21,8 +21,9 @@ class CacheService:
     async def _get_redis(self) -> redis.Redis:
         """Get or create Redis connection."""
         if not self.redis_client:
-            self.redis_client = await redis.from_url(
-                settings.REDIS_URL,
+            # redis.asyncio.from_url returns a client synchronously in redis-py >= 5
+            self.redis_client = redis.from_url(
+                settings.redis_url,
                 encoding="utf-8",
                 decode_responses=True,
             )

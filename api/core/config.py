@@ -72,6 +72,19 @@ class Settings(BaseSettings):
     def AZURE_SERVICE_ACCOUNT_EMAIL(self) -> str:
         return self.azure_service_account_email
 
+    # Legacy/uppercase compatibility properties for caches/queues
+    @property
+    def REDIS_URL(self) -> str:
+        return self.redis_url
+
+    @property
+    def CELERY_BROKER_URL(self) -> str:
+        return self.celery_broker_url
+
+    @property
+    def CELERY_RESULT_BACKEND(self) -> str:
+        return self.celery_result_backend
+
     # SharePoint Configuration
     sharepoint_site_url: str | None = None
     sharepoint_tenant_name: str | None = None

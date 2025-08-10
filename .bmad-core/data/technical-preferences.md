@@ -47,6 +47,18 @@
   - Hungarian language display
 - Playwright tests should run against real backend services
 
+### relative API path
+- Always call the backend via relative path: `/api/...` from the frontend.
+- Do NOT set `VITE_API_BASE_URL` in development. Leave it empty so the app uses `'/api'` and Vite forwards to the backend.
+- Start the backend locally on port 8000 while developing the web app.
+
+  #### Why
+  - If the frontend calls `http://localhost:8000/api/...` directly and the API is not running, the browser logs `net::ERR_CONNECTION_REFUSED` repeatedly (axios retries make the noise worse).
+  - Using the relative `/api` base lets Vite dev server proxy requests to `http://localhost:8000` automatically.
+
+  ### docker frontend
+  In dev, keep frontend calling relative /api and don’t export VITE_API_BASE_URL in your shell. In Docker dev, we have set VITE_API_BASE_URL=http://api:8000 inside the container
+
 ## Project Structure Context
 - Backend: FastAPI (Python)
 - Frontend: React with TypeScript

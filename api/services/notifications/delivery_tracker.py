@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 class DeliveryTracker:
     """Tracks and monitors notification delivery status."""
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session):
         """Initialize delivery tracker."""
         self.session = session
         self.sla_threshold = 98.0  # 98% delivery rate SLA
@@ -58,7 +58,10 @@ class DeliveryTracker:
             log_entry.delivered_at = datetime.now(UTC)
 
         self.session.add(log_entry)
-        await self.session.commit()
+        if isinstance(self.session, AsyncSession):
+            await self.session.commit()
+        else:
+            self.session.commit()
 
         logger.info(
             f"Tracked delivery attempt for {notification_id}",
@@ -90,7 +93,7 @@ class DeliveryTracker:
         """
         # Find the notification log entry
         stmt = select(NotificationLog).where(NotificationLog.related_entity_id == notification_id)
-        result = await self.session.execute(stmt)
+        result = await self.session.execute(stmt) if isinstance(self.session, AsyncSession) else self.session.execute(stmt)
         log_entry = result.scalar_one_or_none()
 
         if not log_entry:
@@ -109,7 +112,10 @@ class DeliveryTracker:
 
             log_entry.error_message = json.dumps(webhook_data)
 
-        await self.session.commit()
+        if isinstance(self.session, AsyncSession):
+            await self.session.commit()
+        else:
+            self.session.commit()
 
         logger.info(
             f"Updated delivery status for {notification_id} to {new_status}",
@@ -149,7 +155,7 @@ class DeliveryTracker:
         query = query.group_by(NotificationLog.delivery_status)
 
         # Execute query
-        result = await self.session.execute(query)
+        result = await self.session.execute(query) if isinstance(self.session, AsyncSession) else self.session.execute(query)
         status_counts = {row[0]: row[1] for row in result.all()}
 
         # Calculate metrics
@@ -225,7 +231,7 @@ class DeliveryTracker:
                 NotificationLog.delivery_status == "failed",
             )
         )
-        result = await self.session.execute(stmt)
+        result = await self.session.execute(stmt) if isinstance(self.session, AsyncSession) else self.session.execute(stmt)
         failed_notifications = result.scalars().all()
 
         # Analyze failures
@@ -284,7 +290,7 @@ class DeliveryTracker:
                 NotificationLog.delivered_at.isnot(None),
             )
         )
-        result = await self.session.execute(stmt)
+        result = await self.session.execute(stmt) if isinstance(self.session, AsyncSession) else self.session.execute(stmt)
         delivered_notifications = result.scalars().all()
 
         if not delivered_notifications:
@@ -371,7 +377,7 @@ class DeliveryTracker:
 class DeliveryWebhookHandler:
     """Handles delivery status webhooks from external services."""
 
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session):
         """Initialize webhook handler."""
         self.session = session
         self.tracker = DeliveryTracker(session)

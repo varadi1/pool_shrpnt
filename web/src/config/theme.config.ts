@@ -1,5 +1,12 @@
 import { createLightTheme, createDarkTheme, type BrandVariants } from '@fluentui/react-components';
 
+// Lightweight global CSS to ensure form fields don't overlap and spacing is consistent
+export const globalCss = `
+  .form-grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .form-full { grid-column: 1 / -1; }
+  .fui-Field { margin-bottom: 12px; }
+`;
+
 const poolDrvBrand: BrandVariants = {
   10: '#020202',
   20: '#111111',

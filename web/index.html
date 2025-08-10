@@ -8,6 +8,21 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      (function () {
+        try {
+          var params = new URLSearchParams(window.location.search);
+          if (params.get('e2e') === '1') {
+            // Enable mock auth signals for E2E without relying on build-time env
+            window.__MSAL_MOCK__ = true;
+            sessionStorage.setItem('mock-account', 'true');
+            sessionStorage.setItem('userRoles', JSON.stringify(['NEU_Admin']));
+          }
+        } catch (e) {
+          // no-op
+        }
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

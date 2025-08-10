@@ -67,7 +67,7 @@ Draft
   - [ ] Set appropriate start_period for initial startup
   - [ ] Verify API health check is properly configured
 - [ ] Configure environment variables (AC: 7, 9)
-  - [ ] Set VITE_API_URL to http://api:8000
+  - [ ] Set VITE_API_BASE_URL to http://api:8000
   - [ ] Pass through necessary development variables
   - [ ] Document required environment settings
 - [ ] Create production override file (AC: 14)
@@ -111,7 +111,7 @@ services:
       - ./web:/app
       - /app/node_modules
     environment:
-      - VITE_API_URL=http://api:8000
+      - VITE_API_BASE_URL=http://api:8000
       - NODE_ENV=development
     depends_on:
       api:
@@ -124,6 +124,17 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: ops/docker/Dockerfile.worker
+    command: ["celery", "-A", "scheduler.app", "beat", "-l", "info"]
+    environment:
+      - POOLDRV_REDIS_URL=redis://redis:6379/0
+    depends_on:
+      redis:
+        condition: service_healthy
 ```
 
 **Production Override Configuration (docker-compose.prod.yml):**
@@ -135,7 +146,7 @@ services:
       target: production
     volumes: []  # No volumes in production
     environment:
-      - VITE_API_URL=${VITE_API_URL:-http://api:8000}
+      - VITE_API_BASE_URL=${VITE_API_BASE_URL:-http://api:8000}
       - NODE_ENV=production
 ```
 
@@ -143,7 +154,7 @@ services:
 
 ```bash
 # Frontend Configuration
-VITE_API_URL=http://localhost:8000  # For local development
+VITE_API_BASE_URL=http://localhost:8000  # For local development outside Docker
 NODE_ENV=development
 ```
 

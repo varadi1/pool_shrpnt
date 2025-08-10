@@ -12,24 +12,27 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from sqlalchemy import create_engine
 
 from api.core.database import Base
+# Import model modules to ensure they are registered with SQLAlchemy's metadata
 from api.models import (  # noqa: F401
     audit,
-    base,
     change_request,
     contract,
-    folder,
-    group,
     guest,
+    idempotency,
     lock,
     notification,
     rbac,
-    sharepoint,
+    scheduler,
     template,
-    template_version,
-)  # Import all models to ensure they're registered with SQLAlchemy
+    user,
+)
 
 # Database URL
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://pooldrv:pooldrv@localhost:5432/pooldrv")
+DATABASE_URL = (
+    os.getenv("POOLDRV_DATABASE_URL")
+    or os.getenv("DATABASE_URL")
+    or "postgresql://pooldrv:pooldrv@localhost:5432/pooldrv"
+)
 
 
 def init_database():
@@ -40,8 +43,11 @@ def init_database():
     engine = create_engine(DATABASE_URL)
 
     # Drop all tables (optional - comment out if you want to keep existing data)
-    print("Dropping existing tables...")
-    Base.metadata.drop_all(bind=engine)
+    print("Dropping existing tables if they exist (best-effort)...")
+    try:
+        Base.metadata.drop_all(bind=engine)
+    except Exception as e:
+        print(f"Warning: drop_all encountered an error and will continue: {e}")
 
     # Create all tables
     print("Creating all tables...")

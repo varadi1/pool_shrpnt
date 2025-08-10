@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Dashboard } from '../Dashboard';
 import { apiClient } from '@/services/api/axios-client';
@@ -92,7 +92,7 @@ describe('Dashboard', () => {
       </QueryClientProvider>
     );
 
-    expect(screen.getByText('Dashboard')).toBeInTheDocument();
+    expect(screen.getByText('Vezérlőpult')).toBeInTheDocument();
   });
 
   it('fetches and displays metrics', async () => {
@@ -110,28 +110,34 @@ describe('Dashboard', () => {
     };
 
     (apiClient.get as any).mockImplementation((url: string) => {
-      if (url.includes('/api/v1/orders?status=active')) {
+      if (url.includes('/api/v1/orders?status=active') || url.includes('/api/orders?status=active')) {
         return Promise.resolve({ count: 10 });
       }
-      if (url.includes('/api/v1/orders?status=pending_provision')) {
+      if (
+        url.includes('/api/v1/orders?status=pending_provision') ||
+        url.includes('/api/orders?status=pending_provision')
+      ) {
         return Promise.resolve({ count: 3 });
       }
-      if (url.includes('/api/v1/orders?status=failed')) {
+      if (
+        url.includes('/api/v1/orders?status=failed') ||
+        url.includes('/api/orders?status=failed')
+      ) {
         return Promise.resolve({ count: 1 });
       }
-      if (url.includes('/api/v1/contracts')) {
+      if (url.includes('/api/v1/contracts') || url.includes('/api/contracts')) {
         return Promise.resolve({ count: 5 });
       }
-      if (url.includes('/api/v1/locks/summary')) {
+      if (url.includes('/api/v1/locks/summary') || url.includes('/api/locks/summary')) {
         return Promise.resolve(mockMetricsResponse);
       }
-      if (url.includes('/api/v1/guests?status=active')) {
+      if (url.includes('/api/v1/guests?status=active') || url.includes('/api/guests?status=active')) {
         return Promise.resolve({ count: 20 });
       }
-      if (url.includes('/api/v1/guests?expiring_days=7')) {
+      if (url.includes('/api/v1/guests?expiring_days=7') || url.includes('/api/guests?expiring_days=7')) {
         return Promise.resolve({ count: 2 });
       }
-      if (url.includes('/health')) {
+      if (url.includes('/health') || url.includes('/api/health')) {
         return Promise.resolve(mockHealthResponse);
       }
       if (url.includes('/api/audit/recent') || url.includes('/api/v1/audit/recent')) {
@@ -154,10 +160,10 @@ describe('Dashboard', () => {
       expect(screen.queryByText('Loading...')).not.toBeInTheDocument();
     }, { timeout: 3000 });
 
-    // Check that metric cards are displayed
-    expect(screen.getByText('Active Orders')).toBeInTheDocument();
-    expect(screen.getByText('Pending Provisions')).toBeInTheDocument();
-    expect(screen.getByText('Failed (24h)')).toBeInTheDocument();
+    // Check that metric card titles match localized labels
+    expect(screen.getByText('Aktív Megrendelések')).toBeInTheDocument();
+    expect(screen.getByText('Függő Telepítések')).toBeInTheDocument();
+    expect(screen.getByText('Sikertelen (24ó)')).toBeInTheDocument();
     
     // The values should be displayed after loading
     await waitFor(() => {
@@ -232,13 +238,13 @@ describe('Dashboard', () => {
     ];
 
     (apiClient.get as any).mockImplementation((url: string) => {
-      if (url.includes('/api/v1/audit/recent')) {
+      if (url.includes('/api/audit/recent') || url.includes('/api/v1/audit/recent')) {
         return Promise.resolve(mockActivities);
       }
-      if (url.includes('/health')) {
+      if (url.includes('/health') || url.includes('/api/health')) {
         return Promise.resolve({ status: 'healthy', queueDepth: 0, lastProvisionTime: 0, latency: 0 });
       }
-      if (url.includes('/api/v1')) {
+      if (url.includes('/api/v1') || url.includes('/api/')) {
         return Promise.resolve({ count: 0 });
       }
       return Promise.resolve({});
@@ -251,9 +257,10 @@ describe('Dashboard', () => {
     );
 
     await waitFor(() => {
-      // Check that activities are displayed
-      expect(screen.getByText('Recent Activity')).toBeInTheDocument();
-      // Activities are rendered in the ActivityFeed component
+      // Check that the activity feed shows activities text
+      const feed = screen.getByTestId('activity-feed');
+      expect(feed).toBeInTheDocument();
+      expect(within(feed).getByText(/activities/)).toBeInTheDocument();
     });
   });
 
@@ -288,12 +295,10 @@ describe('Dashboard', () => {
     );
 
     await waitFor(() => {
-      // Check that health status is displayed
-      const healthText = screen.getByText((content, element) => {
-        return element?.textContent?.includes('degraded') || false;
-      });
-      expect(healthText).toBeInTheDocument();
-      expect(screen.getByText('Latency: 350ms')).toBeInTheDocument();
+      // Check that health status is displayed (scoped to system-health)
+      const system = screen.getByTestId('system-health');
+      expect(within(system).getByText(/Health:\s*degraded/i)).toBeInTheDocument();
+      expect(within(system).getByText('Latency: 350ms')).toBeInTheDocument();
     });
   });
 

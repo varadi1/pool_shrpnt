@@ -200,60 +200,69 @@ class TestOrderEndpoints:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    @patch("api.services.provisioning.ProvisioningService.trigger_provisioning")
-    async def test_provision_order(
-        self, mock_trigger, async_client: AsyncClient, db_session: AsyncSession
-    ):
-        # Setup mock
+    async def test_provision_order(self, async_client: AsyncClient, db_session: AsyncSession):
+        # Patch external dependencies (Redis and Celery), but use real internal service
         job_id = str(uuid.uuid4())
-        mock_trigger.return_value = job_id
+        with patch("api.services.provisioning.redis.from_url") as mock_redis_from_url, patch(
+            "api.services.provisioning.celery_app.send_task"
+        ) as mock_send_task:
+            mock_redis_client = AsyncMock()
+            mock_redis_from_url.return_value = mock_redis_client
+            # hset/expire are awaited in code
+            mock_redis_client.hset = AsyncMock()
+            mock_redis_client.expire = AsyncMock()
 
-        # Create order
-        partner = PartnerCompany(
-            company_code="PARTNER-002",
-            name="Test Partner",
-            short_name="TP2",
-            is_active=True,
-        )
-        db_session.add(partner)
+            # Mock Celery response
+            mock_task = MagicMock()
+            mock_task.id = job_id
+            mock_send_task.return_value = mock_task
 
-        contract = Contract(
-            contract_number="C-2025-500",
-            name="Test Contract",
-            start_date=datetime.utcnow(),
-            status="active",
-            created_by="test",
-            updated_by="test",
-        )
-        db_session.add(contract)
+            # Create order
+            partner = PartnerCompany(
+                company_code="PARTNER-002",
+                name="Test Partner",
+                short_name="TP2",
+                is_active=True,
+            )
+            db_session.add(partner)
 
-        order = OrderEm(
-            em_number="EM-2025-003",
-            title="Test Order",
-            contract_id=1,
-            partner_company_id=1,
-            year=2025,
-            part="C",
-            provisioning_status="pending",
-            created_by="test",
-            updated_by="test",
-        )
-        db_session.add(order)
-        await db_session.commit()
+            contract = Contract(
+                contract_number="C-2025-500",
+                name="Test Contract",
+                start_date=datetime.utcnow(),
+                status="active",
+                created_by="test",
+                updated_by="test",
+            )
+            db_session.add(contract)
 
-        provision_data = {"template_id": 1, "priority": "high"}
+            order = OrderEm(
+                em_number="EM-2025-003",
+                title="Test Order",
+                contract_id=1,
+                partner_company_id=1,
+                year=2025,
+                part="C",
+                provisioning_status="pending",
+                created_by="test",
+                updated_by="test",
+            )
+            db_session.add(order)
+            await db_session.commit()
 
-        response = await async_client.post(
-            f"/api/v1/orders/{order.id}/provision",
-            json=provision_data,
-            headers={"x-user-id": "test-user", "x-correlation-id": str(uuid.uuid4())},
-        )
+            provision_data = {"template_id": 1, "priority": "high"}
 
-        assert response.status_code == status.HTTP_200_OK
-        result = response.json()
-        assert "job_id" in result
-        assert result["status"] == "in_progress"
-        assert result["message"] == "Provisioning job created successfully"
+            response = await async_client.post(
+                f"/api/v1/orders/{order.id}/provision",
+                json=provision_data,
+                headers={"x-user-id": "test-user", "x-correlation-id": str(uuid.uuid4())},
+            )
+
+            assert response.status_code == status.HTTP_200_OK
+            result = response.json()
+            assert "job_id" in result
+            assert result["status"] == "in_progress"
+            assert result["message"] == "Provisioning job created successfully"
 
 
 @pytest.mark.asyncio

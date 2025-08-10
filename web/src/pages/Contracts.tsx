@@ -14,9 +14,10 @@ import {
 } from '@fluentui/react-icons';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/hooks/useAuth';
+import { isE2EMode } from '@/config/auth.config';
 import { contractsApi } from '@/services/api/contracts';
 import type { Contract, ContractList, ContractFilters as IContractFilters } from '@/types/contracts';
-import { ContractTable, ContractTableDescription } from '@/components/contracts/ContractTable';
+import { ContractTableSimple as ContractTable, ContractTableDescription } from '@/components/contracts/ContractTableSimple';
 import { ContractFilters } from '@/components/contracts/ContractFilters';
 import { ContractDetail } from '@/components/contracts/ContractDetail';
 import { ContractFormDialog, DeleteConfirmationDialog } from '@/components/contracts/ContractActions';
@@ -144,7 +145,7 @@ const ContractsContent = () => {
         totalPages: 0,
       };
     },
-    enabled: !!user,
+    enabled: !!user || isE2EMode(),
     refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes for real-time updates
     staleTime: 60 * 1000, // Consider data stale after 1 minute
   });
@@ -169,17 +170,21 @@ const ContractsContent = () => {
       result = result.filter((contract) => contract.status === filters.status);
     }
 
-    // Date range filters
-    if (filters.startDate) {
-      result = result.filter(
-        (contract) => contract.startDate >= filters.startDate!
-      );
+    // Date range filters (compare normalized YYYY-MM-DD strings)
+    const normalize = (d?: string) => (d ? d.slice(0, 10) : undefined);
+    const startFrom = normalize(filters.startDate);
+    const endTo = normalize(filters.endDate);
+
+    if (startFrom) {
+      result = result.filter((contract) => normalize(contract.startDate)! >= startFrom);
     }
 
-    if (filters.endDate) {
-      result = result.filter(
-        (contract) => !contract.endDate || contract.endDate <= filters.endDate!
-      );
+    if (endTo) {
+      result = result.filter((contract) => {
+        const end = normalize(contract.endDate);
+        // If contract has end date, include only when end <= filter; if no end date, exclude
+        return !!end && end <= endTo;
+      });
     }
 
     // Client name filter
@@ -193,7 +198,13 @@ const ContractsContent = () => {
     return result;
   }, [contractList?.items, filters]);
 
-  const contracts = filteredContracts;
+  // Hide inactive contracts by default unless user explicitly filters for them
+  const contracts = useMemo(() => {
+    if (!filters.status || filters.status === 'all') {
+      return filteredContracts.filter(c => c.status !== 'inactive');
+    }
+    return filteredContracts;
+  }, [filteredContracts, filters.status]);
 
   // Monitor contract status changes for real-time notifications
   useContractStatusMonitor(contractList?.items);
@@ -416,7 +427,7 @@ const ContractsContent = () => {
         <div className={styles.tableContainer} role="region" aria-label="Contracts table container">
           {isLoading ? (
             <ContractTableSkeleton rows={pageSize} />
-          ) : contracts.length > 0 ? (
+          ) : contracts && contracts.length > 0 ? (
             <ContractTable
               contracts={contracts}
               onContractClick={handleContractClick}

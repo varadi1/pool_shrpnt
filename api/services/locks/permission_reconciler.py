@@ -91,7 +91,7 @@ class DeadLetterQueue:
         folder_path: str,
         error: str,
         retry_policy: RetryPolicy,
-    ):
+    ) -> None:
         """Add failed sync to dead letter queue."""
         audit_entry = AuditLog(
             entity_type="lock_permission_sync",
@@ -358,6 +358,7 @@ class PermissionReconciler:
         for state in lock_states:
             retry_policy = RetryPolicy()
             sync_succeeded = False
+            last_exception: Exception | None = None
 
             while retry_policy.should_retry() and not sync_succeeded:
                 try:
@@ -393,11 +394,13 @@ class PermissionReconciler:
                         retry_policy.record_failure(e, {"folder": state.folder_path})
                     else:
                         # Non-retryable error
+                        last_exception = e
                         await self._handle_sync_failure(state, e, retry_policy, result)
                         break
 
                 except Exception as e:
                     delay = retry_policy.get_next_delay()
+                    last_exception = e
                     if delay > 0:
                         logger.warning(
                             f"Sync failed, retrying in {delay}s: {e}",
@@ -408,6 +411,15 @@ class PermissionReconciler:
                     else:
                         # Max retries exceeded
                         await self._handle_sync_failure(state, e, retry_policy, result)
+
+            # If retries exhausted without success and failure not handled in loop, handle now
+            if not sync_succeeded and state.sharepoint_sync_status != SyncStatus.FAILED:
+                await self._handle_sync_failure(
+                    state,
+                    last_exception or Exception("Permission sync failed after retries"),
+                    retry_policy,
+                    result,
+                )
 
         return result
 
@@ -493,6 +505,8 @@ class PermissionReconciler:
             result["compensated"] += 1
         else:
             result["failed"] += 1
+        # Count every handled failure (compensated or not) as a failed sync attempt
+        self.monitoring_metrics["syncs_failed"] += 1
 
         result["failures"].append(
             {

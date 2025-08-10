@@ -24,7 +24,7 @@ export default defineConfig({
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:3000',
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
     /* Screenshot on failure */
@@ -72,8 +72,16 @@ export default defineConfig({
   /* Run your local dev server before starting the tests */
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:5173',
+    url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
+    env: {
+      VITE_E2E: 'true',
+      VITE_USE_MOCK_AUTH: 'true',
+      VITE_API_BASE_URL: 'http://localhost:8000',
+      VITE_AZURE_CLIENT_ID: 'test-client-id',
+      VITE_AZURE_TENANT_ID: 'test-tenant-id',
+      VITE_REDIRECT_URI: 'http://localhost:3000',
+    },
     timeout: 120 * 1000,
   },
 });

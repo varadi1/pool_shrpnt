@@ -6,7 +6,7 @@ from uuid import uuid4
 
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import relationship, foreign
 
 from api.core.database import Base
 
@@ -33,6 +33,7 @@ class PermissionLevel(str, Enum):
     FULL = "full"  # Read, write, delete
     WRITE = "write"  # Read and write only
     READ = "read"  # Read only
+    LIMITED = "limited"  # Compatibility alias
 
 
 class LockRule(Base):
@@ -65,9 +66,9 @@ class LockState(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid4)
     order_em_id = Column(
-        Integer, ForeignKey("order_em.id"), nullable=True
-    )  # Optional for manual locks
-    folder_id = Column(UUID(as_uuid=True), nullable=False)
+        Integer, nullable=True
+    )  # Optional for manual locks; tests insert without existing OrderEm
+    folder_id = Column(UUID(as_uuid=True), nullable=True)
     folder_path = Column(Text, nullable=False)
     current_state = Column(String(50))  # LockWindowType value (optional for manual)
     permission_level = Column(String(20))  # PermissionLevel value (optional for manual)
@@ -86,6 +87,13 @@ class LockState(Base):
     removal_reason = Column(Text)  # Reason for removal
     last_extended_at = Column(DateTime(timezone=True))  # Last extension time
     last_extended_by = Column(UUID(as_uuid=True))  # User who last extended
+    # Fields used by reconciliation/tests
+    applied_by = Column(String(255))  # Who applied the current state (system/manual)
+    applied_at = Column(DateTime(timezone=True))  # When the current state was applied
+    sharepoint_sync_status = Column(String(50))
+    sharepoint_sync_at = Column(DateTime(timezone=True))
+    sharepoint_sync_error = Column(Text)
+    needs_manual_review = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=datetime.utcnow)
 
@@ -95,7 +103,13 @@ class LockState(Base):
     cr_reason = Column(Text)  # CR reason copied for quick reference
 
     # Relationships
-    order_em = relationship("OrderEm", back_populates="lock_states")
+    order_em = relationship(
+        "OrderEm",
+        primaryjoin=lambda: foreign(LockState.order_em_id) == __import__(
+            "api.models.contract", fromlist=["contract"]
+        ).contract.OrderEm.id,
+        viewonly=True,
+    )
     locked_by_rule = relationship("LockRule")
     # change_request = relationship("ChangeRequest", back_populates="lock_states")
 

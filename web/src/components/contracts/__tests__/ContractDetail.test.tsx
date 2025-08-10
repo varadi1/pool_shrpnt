@@ -66,7 +66,7 @@ const renderContractDetail = (props = {}) => {
   );
 };
 
-describe.skip('ContractDetail', () => {
+describe('ContractDetail', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.mocked(contractsApi.getById).mockResolvedValue(mockContract);
